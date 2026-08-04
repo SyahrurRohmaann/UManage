@@ -126,3 +126,42 @@ export class MoneyTrackerDB extends Dexie {
 }
 
 export const db = new MoneyTrackerDB();
+
+const SEED_CATEGORIES: Category[] = [
+  { nama: 'Gaji', tipe: 'income', ikon: 'briefcase', warna: '#16a34a' },
+  { nama: 'Freelance', tipe: 'income', ikon: 'laptop', warna: '#2dd4bf' },
+  { nama: 'Investasi', tipe: 'income', ikon: 'trending-up', warna: '#0d9488' },
+  { nama: 'Makanan', tipe: 'expense', ikon: 'utensils', warna: '#dc2626' },
+  { nama: 'Transport', tipe: 'expense', ikon: 'car', warna: '#ea580c' },
+  { nama: 'Tagihan', tipe: 'expense', ikon: 'receipt', warna: '#ef4444' },
+  { nama: 'Hiburan', tipe: 'expense', ikon: 'gamepad-2', warna: '#f97316' },
+  { nama: 'Belanja', tipe: 'expense', ikon: 'shopping-bag', warna: '#ec4899' },
+  { nama: 'Kesehatan', tipe: 'expense', ikon: 'heart-pulse', warna: '#dc2626' },
+  { nama: 'Pendidikan', tipe: 'expense', ikon: 'book-open', warna: '#2563eb' }
+];
+
+const SEED_WALLETS: Array<Omit<Wallet, 'id' | 'created_at'>> = [
+  { nama: 'Cash', saldo_awal: 0 },
+  { nama: 'Bank', saldo_awal: 0 },
+  { nama: 'E-Wallet', saldo_awal: 0 }
+];
+
+let initialization: Promise<void> | undefined;
+
+/** Opens and seeds the database once. Concurrent and repeated calls share the same work. */
+export function initDB(): Promise<void> {
+  if (!initialization) {
+    initialization = db.transaction('rw', db.categories, db.wallets, async () => {
+      if ((await db.categories.count()) === 0) {
+        await db.categories.bulkAdd(SEED_CATEGORIES);
+      }
+      if ((await db.wallets.count()) === 0) {
+        const createdAt = Date.now();
+        await db.wallets.bulkAdd(SEED_WALLETS.map((wallet) => ({ ...wallet, created_at: createdAt })));
+      }
+    }).finally(() => {
+      initialization = undefined;
+    });
+  }
+  return initialization;
+}
