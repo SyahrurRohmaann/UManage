@@ -54,11 +54,11 @@
 <Toast />
 
 <main class="uwangg-shell relative mx-auto min-h-screen max-w-md pb-24 transition-colors bg-surface-base text-text-primary">
-  <header class="shell-header sticky top-0 z-10 border-b border-teal-800/40 bg-primary px-5 py-4 text-white shadow-md dark:border-teal-950 dark:bg-primary-dark">
+  <header class="shell-header sticky top-0 z-30 border-b border-teal-800/40 bg-primary px-5 py-4 text-white shadow-md dark:border-teal-950 dark:bg-primary-dark">
     <div class="flex min-h-12 items-center justify-between gap-4">
       <div class="min-w-0">
         <a href="#main-content" class="block w-fit rounded-md text-2xl font-extrabold tracking-tight focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary-dark">
-          Uwangg
+          Duwekk
         </a>
         <p class="truncate text-sm font-medium text-teal-50">{tabTitles[currentTab]}</p>
       </div>
