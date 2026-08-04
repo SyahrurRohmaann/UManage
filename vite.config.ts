@@ -11,18 +11,16 @@ export default defineConfig({
         name: 'Uwangg',
         short_name: 'Uwangg',
         description: 'Catat Uang, Hutang, Patungan',
-        theme_color: '#2BA8A2',
-        background_color: '#EFF8F7',
+        theme_color: '#0d9488',
+        background_color: '#fafafa',
+        display: 'standalone',
+        lang: 'id',
         icons: [
           {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
+            src: 'uwangg-icon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any maskable'
           }
         ]
       }

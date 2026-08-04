@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Uwangg</title>
+  <desc id="desc">Ikon dompet berwarna teal dengan koin rupiah</desc>
+  <rect width="512" height="512" rx="112" fill="#0d9488"/>
+  <path d="M116 160c0-31 25-56 56-56h180c24 0 44 20 44 44v28H172c-31 0-56-25-56-56Z" fill="#ccfbf1"/>
+  <path d="M96 184c0-22 18-40 40-40h240c31 0 56 25 56 56v176c0 31-25 56-56 56H136c-22 0-40-18-40-40V184Z" fill="#f8fafc"/>
+  <path d="M328 232h104v120H328c-33 0-60-27-60-60s27-60 60-60Z" fill="#115e59"/>
+  <circle cx="328" cy="292" r="17" fill="#facc15"/>
+  <path d="M168 240h56c31 0 56 25 56 56s-25 56-56 56h-56V240Zm48 40v32h8c9 0 16-7 16-16s-7-16-16-16h-8Z" fill="#0d9488"/>
+</svg>

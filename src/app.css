@@ -2,7 +2,76 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-surface-base: #FAFAFA;
+  --color-surface-card: #FFFFFF;
+  --color-cream: #FFFBEB;
+  --color-input: #FFFBEB;
+  --color-text-primary: #1F2937;
+  --color-text-secondary: #6B7280;
+  --color-text-muted: #9CA3AF;
+  --color-border: #E5E7EB;
+  
+  --color-primary: #0D9488;
+  --color-primary-light: #2DD4BF;
+  --color-primary-dark: #115E59;
+  --color-primary-bg: #F0FDFA;
+
+  --color-accent: #2563EB;
+  --color-accent-light: #60A5FA;
+  --color-accent-dark: #1D4ED8;
+
+  --color-coral: #DC2626;
+  --color-coral-light: #FCA5A5;
+  --color-coral-dark: #B91C1C;
+
+  --color-success: #16A34A;
+  --color-danger: #DC2626;
+
+  --color-sky: #2563EB;
+  
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+}
+
+.dark {
+  --color-surface-base: #030712;
+  --color-surface-card: #111827;
+  --color-cream: #1F2937;
+  --color-input: #1F2937;
+  --color-text-primary: #F9FAFB;
+  --color-text-secondary: #9CA3AF;
+  --color-text-muted: #6B7280;
+  --color-border: #374151;
+  
+  /* Invert semantic colors for dark mode readability */
+  --color-primary: #2DD4BF;
+  --color-primary-light: #0D9488;
+  --color-primary-dark: #5EEAD4; /* teal-300 */
+  --color-primary-bg: #042F2E;   /* teal-950 */
+
+  --color-accent: #60A5FA;
+  --color-accent-light: #2563EB;
+  --color-accent-dark: #93C5FD;
+
+  --color-coral: #EF4444;
+  --color-coral-light: #DC2626;
+  --color-coral-dark: #F87171;
+
+  --color-success: #22C55E;
+  --color-danger: #EF4444;
+
+  --color-sky: #60A5FA;
+
+  /* Mute explicit grays if they are used as background */
+  --color-gray-50: #111827;
+  --color-gray-100: #1f2937;
+  --color-gray-200: #374151;
+}
+
 body {
-  @apply bg-surface-base text-gray-900;
+  @apply bg-surface-base text-text-primary;
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  color-scheme: light dark;
 }
