@@ -9,6 +9,8 @@
   type Tab = 'dashboard' | 'transaksi' | 'hutang' | 'patungan' | 'settings';
 
   let currentTab = $state<Tab>('dashboard');
+  let previousTab = $state<Tab>('dashboard');
+  
   let isDarkMode = $state(
     localStorage.theme === 'dark' ||
     (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)
@@ -27,7 +29,19 @@
   };
 
   function selectTab(tab: Tab): void {
+    if (tab !== 'settings') {
+      previousTab = tab;
+    }
     currentTab = tab;
+  }
+
+  function toggleSettings(): void {
+    if (currentTab === 'settings') {
+      currentTab = previousTab;
+    } else {
+      previousTab = currentTab;
+      currentTab = 'settings';
+    }
   }
 
   function toggleDarkMode(): void {
@@ -52,9 +66,9 @@
       <button
         type="button"
         class="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-white/30 text-white transition-colors hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary-dark {currentTab === 'settings' ? 'bg-white/25' : 'bg-white/10'}"
-        aria-label="Buka pengaturan"
+        aria-label={currentTab === 'settings' ? 'Tutup pengaturan' : 'Buka pengaturan'}
         aria-current={currentTab === 'settings' ? 'page' : undefined}
-        onclick={() => selectTab('settings')}
+        onclick={toggleSettings}
       >
         <svg aria-hidden="true" viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
