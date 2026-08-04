@@ -1,7 +1,4 @@
 ﻿<script lang="ts">
-  import { onMount } from 'svelte';
-  import { db, initDB } from './lib/db';
-  import { initStores } from './lib/stores';
   import Dashboard from './lib/components/Dashboard.svelte';
   import Transaksi from './lib/components/Transaksi.svelte';
   import HutangPiutang from './lib/components/HutangPiutang.svelte';
@@ -9,88 +6,65 @@
   import BackupRestore from './lib/components/BackupRestore.svelte';
   import Toast from './lib/components/Toast.svelte';
 
-  let currentTab = 'dashboard';
-  let showSettings = false;
+  type Tab = 'dashboard' | 'transaksi' | 'hutang' | 'patungan' | 'settings';
 
-  // Simple Dark Mode Logic
-  let isDarkMode = false;
-  onMount(() => {
-    // Check local storage or system preference
-    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.documentElement.classList.add('dark');
-      isDarkMode = true;
-    } else {
-      document.documentElement.classList.remove('dark');
-      isDarkMode = false;
-    }
+  let currentTab = $state<Tab>('dashboard');
+  let isDarkMode = $state(
+    localStorage.theme === 'dark' ||
+    (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  );
+
+  $effect(() => {
+    document.documentElement.classList.toggle('dark', isDarkMode);
   });
 
-  function toggleDarkMode() {
+  const tabTitles: Record<Tab, string> = {
+    dashboard: 'Ringkasan',
+    transaksi: 'Transaksi',
+    hutang: 'Hutang & Piutang',
+    patungan: 'Patungan',
+    settings: 'Pengaturan'
+  };
+
+  function selectTab(tab: Tab): void {
+    currentTab = tab;
+  }
+
+  function toggleDarkMode(): void {
     isDarkMode = !isDarkMode;
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.theme = 'dark';
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.theme = 'light';
-    }
+    document.documentElement.classList.toggle('dark', isDarkMode);
+    localStorage.theme = isDarkMode ? 'dark' : 'light';
   }
 </script>
 
 <Toast />
 
-<!-- To apply dark mode effectively across the app, 
-     in a real scenario we would need dark variants in tailwind config and components.
-     For MVP, we just add the class to html and provide the toggle. -->
-
-<main class="min-h-screen pb-20 max-w-md mx-auto bg-surface-base dark:bg-gray-900 relative transition-colors">
-  <!-- Top App Bar -->
-  <header class="bg-primary relative overflow-hidden shadow-md sticky top-0 z-10 rounded-b-xl px-4 py-3 flex items-center justify-between min-h-[80px]">
-    <!-- Cards Background layer for logo effect -->
-    <div class="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none">
-      <div class="w-8 h-12 bg-white rounded shadow-sm transform -rotate-[24deg] absolute -ml-16"></div>
-      <div class="w-8 h-12 bg-white rounded shadow-sm transform -rotate-[12deg] absolute -ml-8"></div>
-      <div class="w-8 h-12 bg-white rounded shadow-sm absolute"></div>
-      <div class="w-8 h-12 bg-white rounded shadow-sm transform rotate-[12deg] absolute ml-8"></div>
-      <div class="w-8 h-12 bg-white rounded shadow-sm transform rotate-[24deg] absolute ml-16"></div>
-    </div>
-    
-    <div class="w-10"></div> <!-- Spacer for flex balance -->
-
-    <div class="relative z-10 transform -rotate-3 text-center flex-1 flex justify-center">
-      <div class="bg-cream inline-block px-4 py-1 border-[3px] border-primary-dark shadow-[2px_2px_0px_#1E8C86] transform -skew-x-6 relative">
-        <!-- Ribbon tails -->
-        <div class="absolute -left-2 top-2 w-4 h-full bg-[#E5D7BE] border-[3px] border-primary-dark -z-10 skew-x-6"></div>
-        <div class="absolute -right-2 top-2 w-4 h-full bg-[#E5D7BE] border-[3px] border-primary-dark -z-10 skew-x-6"></div>
-        
-        <h1 class="font-extrabold tracking-[4px] text-primary-dark flex items-baseline justify-center whitespace-nowrap transform skew-x-6">
-          {#if currentTab === 'dashboard'}
-            <span class="text-3xl font-extrabold" style="text-shadow: 1px 1px 0px #fff">UWANG</span>
-            <span class="text-5xl font-extrabold text-accent ml-1 transform rotate-6" style="text-shadow: 2px 2px 0px #1E8C86, -1px -1px 0px #1E8C86, 1px -1px 0px #1E8C86, -1px 1px 0px #1E8C86">G</span>
-          {:else if currentTab === 'transaksi'}
-            <span class="text-2xl font-extrabold">TRANSAKSI</span>
-          {:else if currentTab === 'hutang'}
-            <span class="text-2xl font-extrabold">HUTANG</span>
-          {:else if currentTab === 'patungan'}
-            <span class="text-2xl font-extrabold">PATUNGAN</span>
-          {:else if currentTab === 'settings'}
-            <span class="text-2xl font-extrabold">SETTINGS</span>
-          {/if}
-        </h1>
+<main class="uwangg-shell relative mx-auto min-h-screen max-w-md pb-24 transition-colors bg-surface-base text-text-primary">
+  <header class="shell-header sticky top-0 z-10 border-b border-teal-800/40 bg-primary px-5 py-4 text-white shadow-md dark:border-teal-950 dark:bg-primary-dark">
+    <div class="flex min-h-12 items-center justify-between gap-4">
+      <div class="min-w-0">
+        <a href="#main-content" class="block w-fit rounded-md text-2xl font-extrabold tracking-tight focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary-dark">
+          Uwangg
+        </a>
+        <p class="truncate text-sm font-medium text-teal-50">{tabTitles[currentTab]}</p>
       </div>
-    </div>
 
-    <!-- Settings Toggle -->
-    <button 
-      class="relative z-10 w-10 h-10 flex items-center justify-center text-white bg-primary-dark/30 rounded-full hover:bg-primary-dark/50 transition-colors"
-      onclick={() => currentTab = 'settings'}
-    >
-      ⚙️
-    </button>
+      <button
+        type="button"
+        class="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-white/30 text-white transition-colors hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary-dark {currentTab === 'settings' ? 'bg-white/25' : 'bg-white/10'}"
+        aria-label="Buka pengaturan"
+        aria-current={currentTab === 'settings' ? 'page' : undefined}
+        onclick={() => selectTab('settings')}
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
+          <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 8.94 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.53-1H3v-4h.08A1.7 1.7 0 0 0 4.6 8.94a1.7 1.7 0 0 0-.34-1.88L4.2 7l2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.53V3h4v.08A1.7 1.7 0 0 0 15.06 4.6a1.7 1.7 0 0 0 1.88-.34L17 4.2 19.83 7l-.06.06A1.7 1.7 0 0 0 19.4 9c.24.62.85 1.02 1.52 1.02H21v4h-.08A1.7 1.7 0 0 0 19.4 15Z" />
+        </svg>
+      </button>
+    </div>
   </header>
 
-  <!-- Content Area -->
-  <div class="p-4">
+  <div id="main-content" class="p-4">
     {#if currentTab === 'dashboard'}
       <Dashboard />
     {:else if currentTab === 'transaksi'}
@@ -99,67 +73,58 @@
       <HutangPiutang />
     {:else if currentTab === 'patungan'}
       <Patungan />
-    {:else if currentTab === 'settings'}
-      <div class="space-y-6">
-         <!-- Settings Content -->
-         <div class="bg-surface-card rounded-xl p-5 shadow-card border-[3px] border-dashed border-gray-100">
-            <h3 class="font-extrabold text-lg mb-4 text-primary-dark">Tampilan</h3>
-            <div class="flex items-center justify-between">
-              <span class="font-bold text-text-secondary">Mode Gelap (Dark Mode)</span>
-              <button 
-                onclick={toggleDarkMode}
-                class="w-14 h-8 flex items-center rounded-full p-1 transition-colors {isDarkMode ? 'bg-primary' : 'bg-gray-300'}"
-              >
-                <div class="bg-white w-6 h-6 rounded-full shadow-md transform transition-transform {isDarkMode ? 'translate-x-6' : ''}"></div>
-              </button>
+    {:else}
+      <section aria-labelledby="settings-title" class="space-y-6">
+        <div class="settings-card rounded-xl border border-border bg-surface-card p-5 shadow-card transition-colors">
+          <h2 id="settings-title" class="mb-4 text-xl font-bold">Tampilan</h2>
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <p class="font-semibold">Mode gelap</p>
+              <p class="text-sm text-text-secondary">Kurangi cahaya layar saat lingkungan gelap.</p>
             </div>
-         </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isDarkMode}
+              aria-label={isDarkMode ? 'Nonaktifkan mode gelap' : 'Aktifkan mode gelap'}
+              onclick={toggleDarkMode}
+              class="relative h-11 w-14 shrink-0 rounded-full border border-gray-300 p-1 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:border-gray-600 dark:focus:ring-offset-gray-900"
+              class:bg-primary={isDarkMode}
+              class:bg-gray-200={!isDarkMode}
+            >
+              <span class="block h-8 w-8 rounded-full bg-white shadow-md transition-transform" class:translate-x-3={isDarkMode}></span>
+            </button>
+          </div>
+        </div>
 
-         <BackupRestore />
-
-      </div>
+        <div class="backup-wrapper">
+          <BackupRestore />
+        </div>
+      </section>
     {/if}
   </div>
 
-  <!-- Bottom Navigation -->
-  <nav class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg max-w-md mx-auto rounded-t-xl z-20 pb-safe transition-colors">
-    <div class="flex justify-around items-center h-20 px-2 pb-2">
-      <button 
-        class="flex flex-col items-center justify-center w-full h-full text-xs font-bold transition-all {currentTab === 'dashboard' ? 'text-primary' : 'text-text-muted hover:text-text-secondary'}"
-        onclick={() => currentTab = 'dashboard'}
-      >
-        <div class="mb-1 w-12 h-8 rounded-round flex items-center justify-center transition-all {currentTab === 'dashboard' ? 'bg-primary-bg shadow-teal-glow' : ''}">
-          <span class="text-xl">🏠</span>
-        </div>
-        Home
+  <nav aria-label="Navigasi utama" class="shell-nav fixed bottom-0 left-0 right-0 z-20 mx-auto max-w-md rounded-t-xl border-t border-border bg-surface-card shadow-lg transition-colors">
+    <div class="flex h-20 items-center justify-around px-2 pb-2">
+      <button type="button" aria-current={currentTab === 'dashboard' ? 'page' : undefined} class="flex h-full w-full flex-col items-center justify-center gap-1 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary {currentTab === 'dashboard' ? 'text-primary dark:text-primary-light' : 'text-text-muted hover:text-text-secondary'}" onclick={() => selectTab('dashboard')}>
+        <svg aria-hidden="true" viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12 12 3l9 9"/><path d="M5 10v11h14V10M9 21v-6h6v6"/></svg>
+        Ringkasan
       </button>
-      <button 
-        class="flex flex-col items-center justify-center w-full h-full text-xs font-bold transition-all {currentTab === 'transaksi' ? 'text-primary' : 'text-text-muted hover:text-text-secondary'}"
-        onclick={() => currentTab = 'transaksi'}
-      >
-        <div class="mb-1 w-12 h-8 rounded-round flex items-center justify-center transition-all {currentTab === 'transaksi' ? 'bg-primary-bg shadow-teal-glow' : ''}">
-          <span class="text-xl">📝</span>
-        </div>
-        Catat
+      <button type="button" aria-current={currentTab === 'transaksi' ? 'page' : undefined} class="flex h-full w-full flex-col items-center justify-center gap-1 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary {currentTab === 'transaksi' ? 'text-primary dark:text-primary-light' : 'text-text-muted hover:text-text-secondary'}" onclick={() => selectTab('transaksi')}>
+        <svg aria-hidden="true" viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg>
+        Transaksi
       </button>
-      <button 
-        class="flex flex-col items-center justify-center w-full h-full text-xs font-bold transition-all {currentTab === 'hutang' ? 'text-primary' : 'text-text-muted hover:text-text-secondary'}"
-        onclick={() => currentTab = 'hutang'}
-      >
-        <div class="mb-1 w-12 h-8 rounded-round flex items-center justify-center transition-all {currentTab === 'hutang' ? 'bg-primary-bg shadow-teal-glow' : ''}">
-          <span class="text-xl">🤝</span>
-        </div>
+      <button type="button" aria-current={currentTab === 'hutang' ? 'page' : undefined} class="flex h-full w-full flex-col items-center justify-center gap-1 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary {currentTab === 'hutang' ? 'text-primary dark:text-primary-light' : 'text-text-muted hover:text-text-secondary'}" onclick={() => selectTab('hutang')}>
+        <svg aria-hidden="true" viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 11h10M12 6v10"/><circle cx="12" cy="12" r="9"/></svg>
         Hutang
       </button>
-      <button 
-        class="flex flex-col items-center justify-center w-full h-full text-xs font-bold transition-all {currentTab === 'patungan' ? 'text-primary' : 'text-text-muted hover:text-text-secondary'}"
-        onclick={() => currentTab = 'patungan'}
-      >
-        <div class="mb-1 w-12 h-8 rounded-round flex items-center justify-center transition-all {currentTab === 'patungan' ? 'bg-primary-bg shadow-teal-glow' : ''}">
-          <span class="text-xl">🍕</span>
-        </div>
-        Split
+      <button type="button" aria-current={currentTab === 'patungan' ? 'page' : undefined} class="flex h-full w-full flex-col items-center justify-center gap-1 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary {currentTab === 'patungan' ? 'text-primary dark:text-primary-light' : 'text-text-muted hover:text-text-secondary'}" onclick={() => selectTab('patungan')}>
+        <svg aria-hidden="true" viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 20c0-4 2.5-7 6-7s6 3 6 7M15 14c3 0 5 2 5 5"/></svg>
+        Patungan
       </button>
     </div>
   </nav>
 </main>
+
+<style>
+</style>
