@@ -5,6 +5,9 @@
   import Patungan from './lib/components/Patungan.svelte';
   import BackupRestore from './lib/components/BackupRestore.svelte';
   import Toast from './lib/components/Toast.svelte';
+  import ReminderLogic from './lib/components/reminders/ReminderLogic.svelte';
+  import ReminderBadge from './lib/components/reminders/ReminderBadge.svelte';
+  import Settings from './lib/components/Settings.svelte';
 
   type Tab = 'dashboard' | 'transaksi' | 'hutang' | 'patungan' | 'settings';
 
@@ -62,21 +65,26 @@
         </a>
         <p class="truncate text-sm font-medium text-teal-50">{tabTitles[currentTab]}</p>
       </div>
-
-      <button
-        type="button"
-        class="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-white/30 text-white transition-colors hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary-dark {currentTab === 'settings' ? 'bg-white/25' : 'bg-white/10'}"
-        aria-label={currentTab === 'settings' ? 'Tutup pengaturan' : 'Buka pengaturan'}
-        aria-current={currentTab === 'settings' ? 'page' : undefined}
-        onclick={toggleSettings}
-      >
-        <svg aria-hidden="true" viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
-          <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 8.94 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.53-1H3v-4h.08A1.7 1.7 0 0 0 4.6 8.94a1.7 1.7 0 0 0-.34-1.88L4.2 7l2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.53V3h4v.08A1.7 1.7 0 0 0 15.06 4.6a1.7 1.7 0 0 0 1.88-.34L17 4.2 19.83 7l-.06.06A1.7 1.7 0 0 0 19.4 9c.24.62.85 1.02 1.52 1.02H21v4h-.08A1.7 1.7 0 0 0 19.4 15Z" />
-        </svg>
-      </button>
+      
+      <div class="flex items-center gap-2">
+        <ReminderBadge onNavigate={selectTab} />
+        <button
+          type="button"
+          class="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-white/30 text-white transition-colors hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary-dark {currentTab === 'settings' ? 'bg-white/25' : 'bg-white/10'}"
+          aria-label={currentTab === 'settings' ? 'Tutup pengaturan' : 'Buka pengaturan'}
+          aria-current={currentTab === 'settings' ? 'page' : undefined}
+          onclick={toggleSettings}
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
+            <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 8.94 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.53-1H3v-4h.08A1.7 1.7 0 0 0 4.6 8.94a1.7 1.7 0 0 0-.34-1.88L4.2 7l2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.53V3h4v.08A1.7 1.7 0 0 0 15.06 4.6a1.7 1.7 0 0 0 1.88-.34L17 4.2 19.83 7l-.06.06A1.7 1.7 0 0 0 19.4 9c.24.62.85 1.02 1.52 1.02H21v4h-.08A1.7 1.7 0 0 0 19.4 15Z" />
+          </svg>
+        </button>
+      </div>
     </div>
   </header>
+
+  <ReminderLogic />
 
   <div id="main-content" class="p-4">
     {#if currentTab === 'dashboard'}
@@ -89,6 +97,7 @@
       <Patungan />
     {:else}
       <section aria-labelledby="settings-title" class="space-y-6">
+        <Settings />
         <div class="settings-card rounded-xl border border-border bg-surface-card p-5 shadow-card transition-colors">
           <h2 id="settings-title" class="mb-4 text-xl font-bold">Tampilan</h2>
           <div class="flex items-center justify-between gap-4">
