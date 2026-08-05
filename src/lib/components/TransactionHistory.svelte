@@ -1,6 +1,7 @@
 <script lang="ts">
   import { transactionStore } from '../stores';
   import { toastStore } from '../stores/toast';
+  import ConfirmationDialog from './ConfirmationDialog.svelte';
 
   function formatRupiah(amount: number): string {
     return new Intl.NumberFormat('id-ID', {
@@ -31,15 +32,25 @@
     return 'Transfer';
   }
 
-  async function handleDelete(id: number): Promise<void> {
-    if (!confirm('Hapus transaksi ini?')) return;
+  let showConfirm = false;
+  let confirmTitle = '';
+  let confirmMessage = '';
+  let confirmText = 'Hapus';
+  let confirmAction: (() => Promise<void>) | null = null;
 
-    try {
-      await transactionStore.deleteTransaction(id);
-      toastStore.success('Transaksi berhasil dihapus.');
-    } catch (error: unknown) {
-      toastStore.error(error instanceof Error ? error.message : 'Transaksi gagal dihapus.');
-    }
+  async function handleDelete(id: number): Promise<void> {
+    confirmTitle = 'Hapus Transaksi';
+    confirmMessage = 'Hapus transaksi ini?';
+    confirmText = 'Hapus';
+    confirmAction = async () => {
+      try {
+        await transactionStore.deleteTransaction(id);
+        toastStore.success('Transaksi berhasil dihapus.');
+      } catch (error: unknown) {
+        toastStore.error(error instanceof Error ? error.message : 'Transaksi gagal dihapus.');
+      }
+    };
+    showConfirm = true;
   }
 </script>
 

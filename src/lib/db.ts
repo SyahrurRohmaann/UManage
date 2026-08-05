@@ -31,6 +31,7 @@ export interface Contact {
   id?: number;
   nama: string;
   created_at: number;
+  deleted_at?: number;
 }
 
 export interface Debt {

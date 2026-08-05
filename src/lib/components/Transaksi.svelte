@@ -2,6 +2,7 @@
   import type { Category, Transaction } from '../db';
   import { categoryStore, transactionStore, walletStore } from '../stores';
   import { toastStore } from '../stores/toast';
+  import ConfirmationDialog from './ConfirmationDialog.svelte';
 
   const transactionState = $derived($transactionStore);
   const walletState = $derived($walletStore);
@@ -35,6 +36,14 @@
   let categoryType = $state<'income' | 'expense'>('expense');
   let categoryIcon = $state('circle');
   let categoryColor = $state('#EF6C4A');
+
+  let showConfirm = $state(false);
+  let confirmTitle = $state('');
+  let confirmMessage = $state('');
+  let confirmText = $state('Hapus');
+  let confirmAction: (() => Promise<void>) | null = null;
+
+  let categoryFormElement: HTMLElement | null = $state(null);
 
   function today(): string {
     return new Date().toISOString().slice(0, 10);
@@ -149,13 +158,18 @@
 
   async function deleteTransaction(transaction: Transaction): Promise<void> {
     if (transaction.id === undefined) return;
-    if (!confirm(`Hapus transaksi ${transaction.catatan || formatRupiah(transaction.nominal)}? Tindakan ini tidak dapat dibatalkan.`)) return;
-    try {
-      await transactionStore.deleteTransaction(transaction.id);
-      toastStore.success('Transaksi berhasil dihapus.');
-    } catch (error) {
-      toastStore.error(`Gagal menghapus transaksi: ${errorMessage(error)}`);
-    }
+    confirmTitle = 'Hapus Transaksi';
+    confirmMessage = `Hapus transaksi ${transaction.catatan || formatRupiah(transaction.nominal)}? Tindakan ini tidak dapat dibatalkan.`;
+    confirmText = 'Hapus';
+    confirmAction = async () => {
+      try {
+        await transactionStore.deleteTransaction(transaction.id!);
+        toastStore.success('Transaksi berhasil dihapus.');
+      } catch (error) {
+        toastStore.error(`Gagal menghapus transaksi: ${errorMessage(error)}`);
+      }
+    };
+    showConfirm = true;
   }
 
   function resetCategoryForm(): void {
@@ -172,6 +186,10 @@
     categoryType = category.tipe;
     categoryIcon = category.ikon;
     categoryColor = category.warna;
+    // Scroll ke form kategori
+    setTimeout(() => {
+      categoryFormElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 0);
   }
 
   async function saveCategory(): Promise<void> {
@@ -196,14 +214,19 @@
 
   async function deleteCategory(category: Category): Promise<void> {
     if (category.id === undefined) return;
-    if (!confirm(`Hapus kategori ${category.nama}? Tindakan ini tidak dapat dibatalkan.`)) return;
-    try {
-      await categoryStore.deleteCategory(category.id);
-      if (editingCategoryId === category.id) resetCategoryForm();
-      toastStore.success('Kategori berhasil dihapus.');
-    } catch (error) {
-      toastStore.error(`Kategori tidak dapat dihapus: ${errorMessage(error)}`);
-    }
+    confirmTitle = 'Hapus Kategori';
+    confirmMessage = `Hapus kategori ${category.nama}? Tindakan ini tidak dapat dibatalkan.`;
+    confirmText = 'Hapus';
+    confirmAction = async () => {
+      try {
+        await categoryStore.deleteCategory(category.id!);
+        if (editingCategoryId === category.id) resetCategoryForm();
+        toastStore.success('Kategori berhasil dihapus.');
+      } catch (error) {
+        toastStore.error(`Kategori tidak dapat dihapus: ${errorMessage(error)}`);
+      }
+    };
+    showConfirm = true;
   }
 
   const filteredTransactions = $derived.by(() => {
@@ -223,6 +246,7 @@
         && (to === undefined || transaction.tanggal <= to);
     });
   });
+
 </script>
 
 <div class="space-y-6">
@@ -316,7 +340,7 @@
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-primary-dark/50 p-4" role="presentation">
     <div role="dialog" aria-modal="true" aria-labelledby="category-title" class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-surface-card p-6 shadow-xl">
       <div class="flex items-center justify-between"><h3 id="category-title" class="text-xl font-extrabold text-primary-dark">Kelola kategori</h3><button type="button" onclick={() => showCategories = false} aria-label="Tutup pengelolaan kategori" class="rounded-lg px-3 py-2 font-bold">Tutup</button></div>
-      <form class="mt-5 grid gap-3 sm:grid-cols-2" onsubmit={(event) => { event.preventDefault(); void saveCategory(); }}>
+      <form class="mt-5 grid gap-3 sm:grid-cols-2" bind:this={categoryFormElement} onsubmit={(event) => { event.preventDefault(); void saveCategory(); }}>
         <label class="text-sm font-bold text-text-secondary">Nama kategori<input required bind:value={categoryName} class="mt-1 w-full rounded-lg bg-cream px-4 py-3" /></label>
         <label class="text-sm font-bold text-text-secondary">Tipe<select bind:value={categoryType} class="mt-1 w-full rounded-lg bg-cream px-4 py-3"><option value="income">Pemasukan</option><option value="expense">Pengeluaran</option></select></label>
         <label class="text-sm font-bold text-text-secondary">Nama ikon<input bind:value={categoryIcon} placeholder="circle" class="mt-1 w-full rounded-lg bg-cream px-4 py-3" /></label>

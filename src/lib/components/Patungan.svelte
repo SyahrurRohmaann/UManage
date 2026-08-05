@@ -3,6 +3,7 @@
   import type { UIPatunganSession } from '../stores';
   import type { Contact } from '../db';
   import { toastStore } from '../stores/toast';
+  import ConfirmationDialog from './ConfirmationDialog.svelte';
 
   const patunganState = patunganStore;
   const contactState = contactStore;
@@ -12,6 +13,13 @@
   $: if ($patunganState.error) toastStore.error(`Gagal memuat patungan: ${$patunganState.error}`);
   $: if ($contactState.error) toastStore.error(`Gagal memuat kontak: ${$contactState.error}`);
   let showModal = false;
+
+  let showConfirm = false;
+  let confirmTitle = '';
+  let confirmMessage = '';
+  let confirmText = 'Hapus';
+  let confirmAction: (() => Promise<void>) | null = null;
+  let sessionToDelete: UIPatunganSession | null = null;
 
   // Form State
   let sessionName = '';
@@ -149,7 +157,13 @@
   }
 
   async function handleDelete(id: number) {
-    if (confirm('Hapus sesi patungan ini?')) {
+    const session = $patunganState.data.find(s => s.id === id);
+    if (!session) return;
+    confirmTitle = 'Hapus Sesi Patungan';
+    confirmMessage = 'Hapus sesi patungan ini?';
+    confirmText = 'Hapus';
+    sessionToDelete = session;
+    confirmAction = async () => {
       try {
         await patunganStore.deleteSession(id);
         toastStore.success('Sesi berhasil dihapus');
@@ -161,7 +175,8 @@
           toastStore.error(`Gagal menghapus sesi: ${message}`);
         }
       }
-    }
+    };
+    showConfirm = true;
   }
 
   function generateWA(session: UIPatunganSession) {

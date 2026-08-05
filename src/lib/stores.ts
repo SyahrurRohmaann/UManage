@@ -410,7 +410,7 @@ class TransactionStore extends ReactiveDexieStore<Transaction[]> {
 }
 
 class ContactStore extends ReactiveDexieStore<Contact[]> {
-  constructor() { super([], () => db.contacts.toArray()); }
+  constructor() { super([], async () => (await db.contacts.toArray()).filter(c => !c.deleted_at)); }
 
   async addContact(name: string): Promise<number> {
     const nama = name.trim();
@@ -429,6 +429,10 @@ class ContactStore extends ReactiveDexieStore<Contact[]> {
       }
       await db.contacts.delete(id);
     });
+  }
+
+  async softDeleteContact(id: number): Promise<void> {
+    await db.contacts.update(id, { deleted_at: Date.now() });
   }
   get contacts(): Contact[] { return this.data; }
 }
