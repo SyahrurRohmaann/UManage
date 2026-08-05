@@ -3,6 +3,7 @@
   import type { UIPatunganSession } from '../stores';
   import type { Contact } from '../db';
   import { toastStore } from '../stores/toast';
+  import ConfirmationDialog from './ConfirmationDialog.svelte';
 
   const patunganState = patunganStore;
   const contactState = contactStore;
@@ -12,6 +13,13 @@
   $: if ($patunganState.error) toastStore.error(`Gagal memuat patungan: ${$patunganState.error}`);
   $: if ($contactState.error) toastStore.error(`Gagal memuat kontak: ${$contactState.error}`);
   let showModal = false;
+
+  let showConfirm = false;
+  let confirmTitle = '';
+  let confirmMessage = '';
+  let confirmText = 'Hapus';
+  let confirmAction: (() => Promise<void>) | null = null;
+  let sessionToDelete: UIPatunganSession | null = null;
 
   // Form State
   let sessionName = '';
@@ -149,7 +157,13 @@
   }
 
   async function handleDelete(id: number) {
-    if (confirm('Hapus sesi patungan ini?')) {
+    const session = $patunganState.data.find(s => s.id === id);
+    if (!session) return;
+    confirmTitle = 'Hapus Sesi Patungan';
+    confirmMessage = 'Hapus sesi patungan ini?';
+    confirmText = 'Hapus';
+    sessionToDelete = session;
+    confirmAction = async () => {
       try {
         await patunganStore.deleteSession(id);
         toastStore.success('Sesi berhasil dihapus');
@@ -161,7 +175,8 @@
           toastStore.error(`Gagal menghapus sesi: ${message}`);
         }
       }
-    }
+    };
+    showConfirm = true;
   }
 
   function generateWA(session: UIPatunganSession) {
@@ -225,7 +240,7 @@
     <h2 class="text-xl font-extrabold text-text-primary tracking-wide">Patungan</h2>
     <button
       onclick={openModal}
-      class="bg-primary from-accent-light to-accent-dark text-white px-5 py-2.5 rounded-round shadow-accent-glow hover:scale-95 transition-transform font-bold flex items-center gap-2 active:bg-accent-light"
+      class="bg-primary from-accent-light to-accent-dark text-white dark:text-primary-bg px-5 py-2.5 rounded-lg shadow-sm hover:scale-95 transition-transform font-bold flex items-center gap-2 active:bg-accent-light"
     >
       <span class="text-lg leading-none">+</span>
       <span>Buat Sesi</span>
@@ -293,13 +308,13 @@
                 <a 
                   href={generateWA(session)}
                   target="_blank"
-                  class="flex-1 bg-green-50 text-success font-bold px-3 py-2.5 rounded-round hover:bg-success hover:text-white transition-colors text-sm text-center shadow-sm"
+                  class="flex-1 bg-white text-success font-bold px-3 py-2.5 rounded-lg hover:bg-success hover:text-white transition-colors text-sm text-center shadow-sm"
                 >
                   Bagikan (WA)
                 </a>
                 <button 
                   onclick={() => { if(session.id) handleDelete(session.id) }}
-                  class="px-4 py-2.5 bg-red-50 text-coral rounded-round hover:bg-coral hover:text-white transition-colors font-bold text-sm shadow-sm"
+                  class="px-4 py-2.5 bg-white text-coral rounded-lg hover:bg-coral hover:text-white transition-colors font-bold text-sm shadow-sm"
                 >
                   Hapus
                 </button>
@@ -324,7 +339,7 @@
                     onkeypress={(e) => { if(e.key === 'Enter') toggleGroup(group.contactName) }}
                   >
                     <div class="flex items-center gap-3">
-                      <div class="w-10 h-10 bg-sky/20 rounded-round flex items-center justify-center text-sky font-extrabold shadow-sm">
+                      <div class="w-10 h-10 bg-sky/20 rounded-lg flex items-center justify-center text-sky font-extrabold shadow-sm">
                         {group.contactName.charAt(0).toUpperCase()}
                       </div>
                       <div>
@@ -378,9 +393,9 @@
                 type="text"
                 bind:value={sessionName}
                 placeholder="Nama Sesi (cth: Bukber SMA)"
-                class="w-full px-4 py-3 bg-cream border-2 border-transparent rounded-lg focus:border-sky focus:bg-surface-card focus:shadow-sky-glow transition-all text-text-primary font-bold placeholder:text-gray-400 text-lg"
+                class="w-full px-4 py-3 bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors border-2 border-transparent rounded-lg focus:border-sky focus:bg-surface-card focus:shadow-sm transition-all text-text-primary font-bold placeholder:text-gray-400 text-lg"
               />
-              <input type="date" bind:value={sessionDate} class="w-full px-4 py-3 bg-cream border-2 border-transparent rounded-lg focus:border-sky text-sm font-bold"/>
+              <input type="date" bind:value={sessionDate} class="w-full px-4 py-3 bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors border-2 border-transparent rounded-lg focus:border-sky text-sm font-bold"/>
             </div>
 
             <!-- Items -->
@@ -462,13 +477,13 @@
           <div class="mt-8 flex gap-3 pb-2">
             <button
               onclick={() => showModal = false}
-              class="flex-1 px-4 py-3 bg-gray-100 rounded-round text-text-secondary font-bold hover:bg-gray-200 transition-colors"
+              class="flex-1 px-4 py-3 bg-gray-100 rounded-lg text-text-secondary font-bold hover:bg-gray-200 transition-colors"
             >
               Batal
             </button>
             <button
               onclick={handleSave}
-              class="flex-[2] bg-gradient-to-r from-sky to-[#3498db] text-white px-6 py-3 rounded-round shadow-sky-glow hover:scale-[0.98] transition-transform font-extrabold text-lg"
+              class="flex-[2] bg-gradient-to-r from-sky to-[#3498db] text-white dark:text-primary-bg px-6 py-3 rounded-lg shadow-sm hover:scale-[0.98] transition-transform font-extrabold text-lg"
             >
               Selesai & Simpan
             </button>

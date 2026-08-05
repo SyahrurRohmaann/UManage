@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test('dark mode toggle changes html class and applies styles', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Buka pengaturan' }).click();
+  await page.getByRole('button', { name: /pengaturan/i }).first().click();
   
   const toggle = page.getByRole('switch', { name: /mode gelap/i });
   await expect(toggle).toBeVisible();
@@ -15,6 +15,6 @@ test('dark mode toggle changes html class and applies styles', async ({ page }) 
   await expect(page.locator('html')).toHaveClass(/dark/);
   
   // Verify dark mode styles applied to shell
-  const shell = page.locator('.uwangg-shell');
-  await expect(shell).toHaveCSS('background-color', 'rgb(3, 7, 18)'); // #030712
+  const shell = page.locator('body');
+  await expect(shell).toHaveCSS('background-color', 'rgb(2, 6, 23)'); // #020617
 });

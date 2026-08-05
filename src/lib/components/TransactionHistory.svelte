@@ -1,6 +1,7 @@
 <script lang="ts">
   import { transactionStore } from '../stores';
   import { toastStore } from '../stores/toast';
+  import ConfirmationDialog from './ConfirmationDialog.svelte';
 
   function formatRupiah(amount: number): string {
     return new Intl.NumberFormat('id-ID', {
@@ -31,15 +32,25 @@
     return 'Transfer';
   }
 
-  async function handleDelete(id: number): Promise<void> {
-    if (!confirm('Hapus transaksi ini?')) return;
+  let showConfirm = false;
+  let confirmTitle = '';
+  let confirmMessage = '';
+  let confirmText = 'Hapus';
+  let confirmAction: (() => Promise<void>) | null = null;
 
-    try {
-      await transactionStore.deleteTransaction(id);
-      toastStore.success('Transaksi berhasil dihapus.');
-    } catch (error: unknown) {
-      toastStore.error(error instanceof Error ? error.message : 'Transaksi gagal dihapus.');
-    }
+  async function handleDelete(id: number): Promise<void> {
+    confirmTitle = 'Hapus Transaksi';
+    confirmMessage = 'Hapus transaksi ini?';
+    confirmText = 'Hapus';
+    confirmAction = async () => {
+      try {
+        await transactionStore.deleteTransaction(id);
+        toastStore.success('Transaksi berhasil dihapus.');
+      } catch (error: unknown) {
+        toastStore.error(error instanceof Error ? error.message : 'Transaksi gagal dihapus.');
+      }
+    };
+    showConfirm = true;
   }
 </script>
 
@@ -57,7 +68,41 @@
       <p class="text-gray-500">Belum ada transaksi</p>
     </div>
   {:else}
-    <div class="divide-y divide-gray-100">
+    <div class="hidden lg:block">
+      <table class="w-full text-left text-sm">
+        <tbody class="divide-y divide-border">
+          {#each $transactionStore.data as transaction (transaction.id)}
+            <tr class="hover:bg-gray-50 transition-colors">
+              <td class="p-4 w-1/2">
+                <p class="font-bold text-text-primary truncate">{transaction.catatan || 'Tanpa catatan'}</p>
+                <p class="text-xs text-text-secondary mt-1">{formatDate(transaction.tanggal)} • {formatTime(transaction.tanggal)}</p>
+              </td>
+              <td class="p-4 text-right">
+                <p class="{transaction.tipe === 'income' ? 'text-success' : transaction.tipe === 'expense' ? 'text-danger' : 'text-primary'} font-bold">
+                  {transaction.tipe === 'income' ? '+' : transaction.tipe === 'expense' ? '-' : ''}{formatRupiah(transaction.nominal)}
+                </p>
+                <p class="text-xs text-text-secondary mt-1">{transactionType(transaction.tipe)}</p>
+              </td>
+              <td class="p-4 text-right w-20">
+                {#if transaction.id !== undefined}
+                  <button
+                    type="button"
+                    onclick={() => void handleDelete(transaction.id!)}
+                    aria-label={`Hapus transaksi ${transaction.catatan || transactionType(transaction.tipe)}`}
+                    class="text-xs font-bold text-coral hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                  >
+                    Hapus
+                  </button>
+                {/if}
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile view -->
+    <div class="divide-y divide-gray-100 lg:hidden">
       {#each $transactionStore.data as transaction (transaction.id)}
         <article class="p-4 hover:bg-gray-50 transition-colors">
           <div class="flex justify-between items-start gap-4">

@@ -2,6 +2,7 @@
   import type { Category, Transaction } from '../db';
   import { categoryStore, transactionStore, walletStore } from '../stores';
   import { toastStore } from '../stores/toast';
+  import ConfirmationDialog from './ConfirmationDialog.svelte';
 
   const transactionState = $derived($transactionStore);
   const walletState = $derived($walletStore);
@@ -35,6 +36,14 @@
   let categoryType = $state<'income' | 'expense'>('expense');
   let categoryIcon = $state('circle');
   let categoryColor = $state('#EF6C4A');
+
+  let showConfirm = $state(false);
+  let confirmTitle = $state('');
+  let confirmMessage = $state('');
+  let confirmText = $state('Hapus');
+  let confirmAction: (() => Promise<void>) | null = null;
+
+  let categoryFormElement: HTMLElement | null = $state(null);
 
   function today(): string {
     return new Date().toISOString().slice(0, 10);
@@ -149,13 +158,18 @@
 
   async function deleteTransaction(transaction: Transaction): Promise<void> {
     if (transaction.id === undefined) return;
-    if (!confirm(`Hapus transaksi ${transaction.catatan || formatRupiah(transaction.nominal)}? Tindakan ini tidak dapat dibatalkan.`)) return;
-    try {
-      await transactionStore.deleteTransaction(transaction.id);
-      toastStore.success('Transaksi berhasil dihapus.');
-    } catch (error) {
-      toastStore.error(`Gagal menghapus transaksi: ${errorMessage(error)}`);
-    }
+    confirmTitle = 'Hapus Transaksi';
+    confirmMessage = `Hapus transaksi ${transaction.catatan || formatRupiah(transaction.nominal)}? Tindakan ini tidak dapat dibatalkan.`;
+    confirmText = 'Hapus';
+    confirmAction = async () => {
+      try {
+        await transactionStore.deleteTransaction(transaction.id!);
+        toastStore.success('Transaksi berhasil dihapus.');
+      } catch (error) {
+        toastStore.error(`Gagal menghapus transaksi: ${errorMessage(error)}`);
+      }
+    };
+    showConfirm = true;
   }
 
   function resetCategoryForm(): void {
@@ -172,6 +186,10 @@
     categoryType = category.tipe;
     categoryIcon = category.ikon;
     categoryColor = category.warna;
+    // Scroll ke form kategori
+    setTimeout(() => {
+      categoryFormElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 0);
   }
 
   async function saveCategory(): Promise<void> {
@@ -196,14 +214,19 @@
 
   async function deleteCategory(category: Category): Promise<void> {
     if (category.id === undefined) return;
-    if (!confirm(`Hapus kategori ${category.nama}? Tindakan ini tidak dapat dibatalkan.`)) return;
-    try {
-      await categoryStore.deleteCategory(category.id);
-      if (editingCategoryId === category.id) resetCategoryForm();
-      toastStore.success('Kategori berhasil dihapus.');
-    } catch (error) {
-      toastStore.error(`Kategori tidak dapat dihapus: ${errorMessage(error)}`);
-    }
+    confirmTitle = 'Hapus Kategori';
+    confirmMessage = `Hapus kategori ${category.nama}? Tindakan ini tidak dapat dibatalkan.`;
+    confirmText = 'Hapus';
+    confirmAction = async () => {
+      try {
+        await categoryStore.deleteCategory(category.id!);
+        if (editingCategoryId === category.id) resetCategoryForm();
+        toastStore.success('Kategori berhasil dihapus.');
+      } catch (error) {
+        toastStore.error(`Kategori tidak dapat dihapus: ${errorMessage(error)}`);
+      }
+    };
+    showConfirm = true;
   }
 
   const filteredTransactions = $derived.by(() => {
@@ -223,6 +246,7 @@
         && (to === undefined || transaction.tanggal <= to);
     });
   });
+
 </script>
 
 <div class="space-y-6">
@@ -232,8 +256,8 @@
       <p class="text-sm text-text-muted">Catat pemasukan dan pengeluaran harian.</p>
     </div>
     <div class="flex gap-2">
-      <button type="button" onclick={() => showCategories = true} class="rounded-round border-2 border-primary px-4 py-2 font-bold text-primary">Kelola kategori</button>
-      <button type="button" onclick={openCreateTransaction} class="rounded-round bg-primary px-5 py-2.5 font-bold text-white shadow-teal-glow">Tambah transaksi</button>
+      <button type="button" onclick={() => showCategories = true} class="rounded-lg border-2 border-primary px-4 py-2 font-bold text-primary">Kelola kategori</button>
+      <button type="button" onclick={openCreateTransaction} class="rounded-lg bg-primary px-5 py-2.5 font-bold text-white dark:text-primary-bg shadow-sm">Tambah transaksi</button>
     </div>
   </header>
 
@@ -241,22 +265,22 @@
     <h3 id="filter-heading" class="font-extrabold text-text-primary">Filter riwayat</h3>
     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       <label class="text-sm font-bold text-text-secondary">Cari catatan atau tag
-        <input type="search" bind:value={searchQuery} placeholder="Contoh: makan, kantor" class="mt-1 w-full rounded-lg bg-cream px-4 py-3 font-medium focus:ring-2 focus:ring-accent" />
+        <input type="search" bind:value={searchQuery} placeholder="Contoh: makan, kantor" class="mt-1 w-full rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors px-4 py-3 font-medium focus:ring-2 focus:ring-accent" />
       </label>
       <label class="text-sm font-bold text-text-secondary">Dari tanggal
-        <input type="date" bind:value={filterDateFrom} class="mt-1 w-full rounded-lg bg-cream px-4 py-3" />
+        <input type="date" bind:value={filterDateFrom} class="mt-1 w-full rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors px-4 py-3" />
       </label>
       <label class="text-sm font-bold text-text-secondary">Sampai tanggal
-        <input type="date" bind:value={filterDateTo} class="mt-1 w-full rounded-lg bg-cream px-4 py-3" />
+        <input type="date" bind:value={filterDateTo} class="mt-1 w-full rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors px-4 py-3" />
       </label>
       <label class="text-sm font-bold text-text-secondary">Tipe
-        <select bind:value={filterType} class="mt-1 w-full rounded-lg bg-cream px-4 py-3"><option value="all">Semua tipe</option><option value="income">Pemasukan</option><option value="expense">Pengeluaran</option><option value="transfer">Transfer</option></select>
+        <select bind:value={filterType} class="mt-1 w-full rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors px-4 py-3"><option value="all">Semua tipe</option><option value="income">Pemasukan</option><option value="expense">Pengeluaran</option><option value="transfer">Transfer</option></select>
       </label>
       <label class="text-sm font-bold text-text-secondary">Wallet
-        <select bind:value={filterWallet} class="mt-1 w-full rounded-lg bg-cream px-4 py-3"><option value={0}>Semua wallet</option>{#each wallets as wallet (wallet.id)}<option value={wallet.id}>{wallet.nama}</option>{/each}</select>
+        <select bind:value={filterWallet} class="mt-1 w-full rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors px-4 py-3"><option value={0}>Semua wallet</option>{#each wallets as wallet (wallet.id)}<option value={wallet.id}>{wallet.nama}</option>{/each}</select>
       </label>
       <label class="text-sm font-bold text-text-secondary">Kategori
-        <select bind:value={filterCategory} class="mt-1 w-full rounded-lg bg-cream px-4 py-3"><option value={0}>Semua kategori</option>{#each categories as category (category.id)}<option value={category.id}>{category.nama}</option>{/each}</select>
+        <select bind:value={filterCategory} class="mt-1 w-full rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors px-4 py-3"><option value={0}>Semua kategori</option>{#each categories as category (category.id)}<option value={category.id}>{category.nama}</option>{/each}</select>
       </label>
     </div>
   </section>
@@ -268,13 +292,54 @@
   {:else if filteredTransactions.length === 0}
     <p class="rounded-xl border-2 border-dashed border-gray-200 bg-surface-card p-10 text-center text-text-secondary">Belum ada transaksi yang sesuai.</p>
   {:else}
-    <div class="space-y-3">
+    <!-- Desktop Table View -->
+    <div class="hidden lg:block bg-surface-card rounded-xl shadow-card overflow-hidden">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-gray-50 border-b border-border text-text-secondary">
+          <tr>
+            <th class="p-4 font-bold">Catatan</th>
+            <th class="p-4 font-bold">Tanggal</th>
+            <th class="p-4 font-bold">Kategori</th>
+            <th class="p-4 font-bold">Wallet</th>
+            <th class="p-4 font-bold">Tag</th>
+            <th class="p-4 font-bold text-right">Nominal</th>
+            <th class="p-4 font-bold text-right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border">
+          {#each filteredTransactions as transaction (transaction.id)}
+            <tr class="hover:bg-gray-50 transition-colors">
+              <td class="p-4 font-bold text-text-primary">{transaction.catatan || '-'}</td>
+              <td class="p-4 text-text-secondary">{formatDate(transaction.tanggal)}</td>
+              <td class="p-4">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-surface-base border border-border">
+                  <span class="w-2 h-2 rounded-full" style="background-color: {categories.find(c => c.id === transaction.category_id)?.warna || '#cbd5e1'}"></span>
+                  {categoryNameFor(transaction.category_id)}
+                </span>
+              </td>
+              <td class="p-4 text-text-secondary">{walletName(transaction.wallet_id)}</td>
+              <td class="p-4 text-text-secondary">{transaction.tag ? `#${transaction.tag}` : '-'}</td>
+              <td class="p-4 text-right font-extrabold {transaction.tipe === 'income' ? 'text-success' : 'text-coral'}">
+                {transaction.tipe === 'income' ? '+' : '-'}{formatRupiah(transaction.nominal)}
+              </td>
+              <td class="p-4 text-right">
+                <button type="button" onclick={() => openEditTransaction(transaction)} class="px-2 py-1 text-xs font-bold text-primary hover:bg-primary-bg rounded transition-colors">Edit</button>
+                <button type="button" onclick={() => deleteTransaction(transaction)} class="px-2 py-1 text-xs font-bold text-coral hover:bg-red-50 rounded transition-colors ml-1">Hapus</button>
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile Card View -->
+    <div class="space-y-3 lg:hidden">
       {#each filteredTransactions as transaction (transaction.id)}
         <article class="flex flex-wrap items-center justify-between gap-4 rounded-xl border-l-[6px] bg-surface-card p-4 shadow-card {transaction.tipe === 'income' ? 'border-success' : 'border-coral'}">
           <div class="min-w-0 flex-1">
             <p class="font-extrabold text-text-primary">{transaction.catatan || categoryNameFor(transaction.category_id)}</p>
             <p class="mt-1 text-sm text-text-muted">{formatDate(transaction.tanggal)} · {walletName(transaction.wallet_id)} · {categoryNameFor(transaction.category_id)}</p>
-            {#if transaction.tag}<p class="mt-2 inline-block rounded-round bg-gray-100 px-2 py-1 text-xs font-bold text-text-secondary">#{transaction.tag}</p>{/if}
+            {#if transaction.tag}<p class="mt-2 inline-block rounded-lg bg-gray-100 px-2 py-1 text-xs font-bold text-text-secondary">#{transaction.tag}</p>{/if}
           </div>
           <p class="text-lg font-extrabold {transaction.tipe === 'income' ? 'text-success' : 'text-coral'}">{transaction.tipe === 'income' ? '+' : '-'}{formatRupiah(transaction.nominal)}</p>
           <div class="flex gap-2">
@@ -292,21 +357,21 @@
     <div role="dialog" aria-modal="true" aria-labelledby="transaction-form-title" class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-surface-card p-6 shadow-xl">
       <h3 id="transaction-form-title" class="text-xl font-extrabold text-primary-dark">{editingTransactionId === undefined ? 'Tambah transaksi' : 'Edit transaksi'}</h3>
       <form class="mt-5 space-y-4" onsubmit={(event) => { event.preventDefault(); void saveTransaction(); }}>
-        <fieldset><legend class="mb-2 text-sm font-bold text-text-secondary">Tipe transaksi</legend><div class="grid grid-cols-3 gap-2"><label class="rounded-lg bg-cream p-3 font-bold"><input type="radio" bind:group={transactionType} value="income" /> Pemasukan</label><label class="rounded-lg bg-cream p-3 font-bold"><input type="radio" bind:group={transactionType} value="expense" /> Pengeluaran</label><label class="rounded-lg bg-cream p-3 font-bold"><input type="radio" bind:group={transactionType} value="transfer" disabled={editingTransactionId !== undefined} /> Transfer</label></div></fieldset>
-        <label class="block text-sm font-bold text-text-secondary">Nominal (Rp)<input required type="number" min="1" step="1" bind:value={transactionAmount} class="mt-1 w-full rounded-lg bg-cream px-4 py-3 text-lg font-bold" /></label>
+        <fieldset><legend class="mb-2 text-sm font-bold text-text-secondary">Tipe transaksi</legend><div class="grid grid-cols-3 gap-2"><label class="rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors p-3 font-bold"><input type="radio" bind:group={transactionType} value="income" /> Pemasukan</label><label class="rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors p-3 font-bold"><input type="radio" bind:group={transactionType} value="expense" /> Pengeluaran</label><label class="rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors p-3 font-bold"><input type="radio" bind:group={transactionType} value="transfer" disabled={editingTransactionId !== undefined} /> Transfer</label></div></fieldset>
+        <label class="block text-sm font-bold text-text-secondary">Nominal (Rp)<input required type="number" min="1" step="1" bind:value={transactionAmount} class="mt-1 w-full rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors px-4 py-3 text-lg font-bold" /></label>
         <div class="grid gap-3 sm:grid-cols-2">
-          <label class="text-sm font-bold text-text-secondary">Tanggal<input required type="date" bind:value={transactionDate} class="mt-1 w-full rounded-lg bg-cream px-4 py-3" /></label>
-          <label class="text-sm font-bold text-text-secondary">Wallet<select required bind:value={transactionWalletId} class="mt-1 w-full rounded-lg bg-cream px-4 py-3"><option value={0} disabled>Pilih wallet</option>{#each wallets as wallet (wallet.id)}<option value={wallet.id}>{wallet.nama}</option>{/each}</select></label>
+          <label class="text-sm font-bold text-text-secondary">Tanggal<input required type="date" bind:value={transactionDate} class="mt-1 w-full rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors px-4 py-3" /></label>
+          <label class="text-sm font-bold text-text-secondary">Wallet<select required bind:value={transactionWalletId} class="mt-1 w-full rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors px-4 py-3"><option value={0} disabled>Pilih wallet</option>{#each wallets as wallet (wallet.id)}<option value={wallet.id}>{wallet.nama}</option>{/each}</select></label>
         </div>
         {#if transactionType === 'transfer'}
-          <label class="block text-sm font-bold text-text-secondary">Wallet tujuan<select required bind:value={transferDestinationWalletId} class="mt-1 w-full rounded-lg bg-cream px-4 py-3"><option value={0} disabled>Pilih wallet tujuan</option>{#each wallets.filter((wallet) => wallet.id !== transactionWalletId) as wallet (wallet.id)}<option value={wallet.id}>{wallet.nama}</option>{/each}</select></label>
+          <label class="block text-sm font-bold text-text-secondary">Wallet tujuan<select required bind:value={transferDestinationWalletId} class="mt-1 w-full rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors px-4 py-3"><option value={0} disabled>Pilih wallet tujuan</option>{#each wallets.filter((wallet) => wallet.id !== transactionWalletId) as wallet (wallet.id)}<option value={wallet.id}>{wallet.nama}</option>{/each}</select></label>
         {:else}
-          <label class="block text-sm font-bold text-text-secondary">Kategori<select bind:value={transactionCategoryId} class="mt-1 w-full rounded-lg bg-cream px-4 py-3"><option value={0}>Tanpa kategori</option>{#each categories.filter((category) => category.tipe === transactionType) as category (category.id)}<option value={category.id}>{category.nama}</option>{/each}</select></label>
+          <label class="block text-sm font-bold text-text-secondary">Kategori<select bind:value={transactionCategoryId} class="mt-1 w-full rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors px-4 py-3"><option value={0}>Tanpa kategori</option>{#each categories.filter((category) => category.tipe === transactionType) as category (category.id)}<option value={category.id}>{category.nama}</option>{/each}</select></label>
         {/if}
-        <label class="block text-sm font-bold text-text-secondary">Catatan<textarea bind:value={transactionNote} rows="2" placeholder="Keterangan transaksi" class="mt-1 w-full rounded-lg bg-cream px-4 py-3"></textarea></label>
-        <label class="block text-sm font-bold text-text-secondary">Tag<input type="text" bind:value={transactionTag} placeholder="Contoh: kantor" class="mt-1 w-full rounded-lg bg-cream px-4 py-3" /></label>
+        <label class="block text-sm font-bold text-text-secondary">Catatan<textarea bind:value={transactionNote} rows="2" placeholder="Keterangan transaksi" class="mt-1 w-full rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors px-4 py-3"></textarea></label>
+        <label class="block text-sm font-bold text-text-secondary">Tag<input type="text" bind:value={transactionTag} placeholder="Contoh: kantor" class="mt-1 w-full rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors px-4 py-3" /></label>
         {#if transactionType === 'transfer'}<p class="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">Transfer disimpan sebagai dua transaksi berpasangan agar saldo total tidak berubah.</p>{/if}
-        <div class="flex gap-3 pt-2"><button type="button" onclick={() => showTransactionForm = false} class="flex-1 rounded-round bg-gray-100 px-4 py-3 font-bold">Batal</button><button type="submit" class="flex-1 rounded-round bg-primary px-4 py-3 font-bold text-white">Simpan</button></div>
+        <div class="flex gap-3 pt-2"><button type="button" onclick={() => showTransactionForm = false} class="flex-1 rounded-lg bg-gray-100 px-4 py-3 font-bold">Batal</button><button type="submit" class="flex-1 rounded-lg bg-primary px-4 py-3 font-bold text-white">Simpan</button></div>
       </form>
     </div>
   </div>
@@ -316,16 +381,16 @@
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-primary-dark/50 p-4" role="presentation">
     <div role="dialog" aria-modal="true" aria-labelledby="category-title" class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-surface-card p-6 shadow-xl">
       <div class="flex items-center justify-between"><h3 id="category-title" class="text-xl font-extrabold text-primary-dark">Kelola kategori</h3><button type="button" onclick={() => showCategories = false} aria-label="Tutup pengelolaan kategori" class="rounded-lg px-3 py-2 font-bold">Tutup</button></div>
-      <form class="mt-5 grid gap-3 sm:grid-cols-2" onsubmit={(event) => { event.preventDefault(); void saveCategory(); }}>
-        <label class="text-sm font-bold text-text-secondary">Nama kategori<input required bind:value={categoryName} class="mt-1 w-full rounded-lg bg-cream px-4 py-3" /></label>
-        <label class="text-sm font-bold text-text-secondary">Tipe<select bind:value={categoryType} class="mt-1 w-full rounded-lg bg-cream px-4 py-3"><option value="income">Pemasukan</option><option value="expense">Pengeluaran</option></select></label>
-        <label class="text-sm font-bold text-text-secondary">Nama ikon<input bind:value={categoryIcon} placeholder="circle" class="mt-1 w-full rounded-lg bg-cream px-4 py-3" /></label>
-        <label class="text-sm font-bold text-text-secondary">Warna<input type="color" bind:value={categoryColor} class="mt-1 h-12 w-full rounded-lg bg-cream p-2" /></label>
-        <div class="flex gap-2 sm:col-span-2">{#if editingCategoryId !== undefined}<button type="button" onclick={resetCategoryForm} class="rounded-round bg-gray-100 px-4 py-2 font-bold">Batal edit</button>{/if}<button type="submit" class="rounded-round bg-primary px-5 py-2 font-bold text-white">{editingCategoryId === undefined ? 'Tambah kategori' : 'Simpan perubahan'}</button></div>
+      <form class="mt-5 grid gap-3 sm:grid-cols-2" bind:this={categoryFormElement} onsubmit={(event) => { event.preventDefault(); void saveCategory(); }}>
+        <label class="text-sm font-bold text-text-secondary">Nama kategori<input required bind:value={categoryName} class="mt-1 w-full rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors px-4 py-3" /></label>
+        <label class="text-sm font-bold text-text-secondary">Tipe<select bind:value={categoryType} class="mt-1 w-full rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors px-4 py-3"><option value="income">Pemasukan</option><option value="expense">Pengeluaran</option></select></label>
+        <label class="text-sm font-bold text-text-secondary">Nama ikon<input bind:value={categoryIcon} placeholder="circle" class="mt-1 w-full rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors px-4 py-3" /></label>
+        <label class="text-sm font-bold text-text-secondary">Warna<input type="color" bind:value={categoryColor} class="mt-1 h-12 w-full rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors p-2" /></label>
+        <div class="flex gap-2 sm:col-span-2">{#if editingCategoryId !== undefined}<button type="button" onclick={resetCategoryForm} class="rounded-lg bg-gray-100 px-4 py-2 font-bold">Batal edit</button>{/if}<button type="submit" class="rounded-lg bg-primary px-5 py-2 font-bold text-white">{editingCategoryId === undefined ? 'Tambah kategori' : 'Simpan perubahan'}</button></div>
       </form>
       <div class="mt-6 space-y-2">
         {#each categories as category (category.id)}
-          <div class="flex items-center justify-between gap-3 rounded-lg bg-cream p-3"><div class="flex items-center gap-3"><span aria-hidden="true" class="h-4 w-4 rounded-full" style:background-color={category.warna}></span><span><strong>{category.nama}</strong><small class="ml-2 text-text-muted">{category.tipe === 'income' ? 'Pemasukan' : 'Pengeluaran'}</small></span></div><div class="flex gap-2"><button type="button" onclick={() => editCategory(category)} class="rounded-lg border px-3 py-2 text-sm font-bold">Edit</button><button type="button" onclick={() => deleteCategory(category)} class="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700">Hapus</button></div></div>
+          <div class="flex items-center justify-between gap-3 rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors p-3"><div class="flex items-center gap-3"><span aria-hidden="true" class="h-4 w-4 rounded-full" style:background-color={category.warna}></span><span><strong>{category.nama}</strong><small class="ml-2 text-text-muted">{category.tipe === 'income' ? 'Pemasukan' : 'Pengeluaran'}</small></span></div><div class="flex gap-2"><button type="button" onclick={() => editCategory(category)} class="rounded-lg border px-3 py-2 text-sm font-bold">Edit</button><button type="button" onclick={() => deleteCategory(category)} class="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700">Hapus</button></div></div>
         {/each}
       </div>
     </div>

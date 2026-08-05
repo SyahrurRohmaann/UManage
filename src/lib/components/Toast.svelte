@@ -14,9 +14,9 @@
   {#each toasts as toast (toast.id)}
     <div 
       class="pointer-events-auto transform transition-all duration-300 translate-y-0 opacity-100 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border-l-4 min-w-[300px] max-w-sm
-        {toast.type === 'success' ? 'bg-surface-card border-success text-success shadow-green-glow' : 
-         toast.type === 'error' ? 'bg-surface-card border-coral text-coral shadow-coral-glow' : 
-         'bg-surface-card border-sky text-sky shadow-sky-glow'}"
+        {toast.type === 'success' ? 'bg-surface-card border-success text-success shadow-sm' : 
+         toast.type === 'error' ? 'bg-surface-card border-coral text-coral shadow-sm' : 
+         'bg-surface-card border-sky text-sky shadow-sm'}"
       role="alert"
     >
       <div class="text-xl">

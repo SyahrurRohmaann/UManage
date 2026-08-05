@@ -2,10 +2,17 @@
   import { initStores, walletStore, type UIWallet } from '../stores';
   import { toastStore } from '../stores/toast';
   import WalletForm from './WalletForm.svelte';
+  import ConfirmationDialog from './ConfirmationDialog.svelte';
 
   let showForm = false;
   let editingWallet: UIWallet | null = null;
   let editingId: number | null = null;
+
+  let showConfirm = false;
+  let confirmTitle = '';
+  let confirmMessage = '';
+  let confirmText = 'Hapus';
+  let confirmAction: (() => Promise<void>) | null = null;
 
   void initStores().catch((error: unknown) => {
     toastStore.error(error instanceof Error ? error.message : 'Dompet tidak dapat dimuat.');
@@ -24,15 +31,19 @@
   }
 
   async function handleDelete(walletId: number): Promise<void> {
-    if (!confirm('Hapus dompet ini?')) return;
-
-    try {
-      await walletStore.deleteWallet(walletId);
-      toastStore.success('Dompet berhasil dihapus.');
-    } catch (error: unknown) {
-      const detail = error instanceof Error ? error.message : 'Terjadi kesalahan yang tidak diketahui.';
-      toastStore.error(`Dompet gagal dihapus: ${detail}`);
-    }
+    confirmTitle = 'Hapus Dompet';
+    confirmMessage = 'Hapus dompet ini?';
+    confirmText = 'Hapus';
+    confirmAction = async () => {
+      try {
+        await walletStore.deleteWallet(walletId);
+        toastStore.success('Dompet berhasil dihapus.');
+      } catch (error: unknown) {
+        const detail = error instanceof Error ? error.message : 'Terjadi kesalahan yang tidak diketahui.';
+        toastStore.error(`Dompet gagal dihapus: ${detail}`);
+      }
+    };
+    showConfirm = true;
   }
 
   function closeForm(): void {
@@ -48,10 +59,10 @@
     <button
       type="button"
       onclick={openAdd}
-      class="bg-primary from-accent-light to-accent-dark text-white px-5 py-2.5 rounded-round shadow-accent-glow hover:scale-95 transition-transform font-bold flex items-center gap-2 active:bg-accent-light"
+      class="bg-primary from-accent-light to-accent-dark px-5 py-2.5 rounded-lg shadow-sm hover:scale-95 transition-transform font-bold flex items-center gap-2 active:bg-accent-light"
     >
-      <span class="text-lg leading-none" aria-hidden="true">+</span>
-      <span>Tambah</span>
+      <span class="text-lg leading-none text-white dark:text-primary-bg" aria-hidden="true">+</span>
+      <span class="text-white dark:text-primary-bg">Tambah</span>
     </button>
   </div>
 
@@ -85,7 +96,7 @@
           <button
             type="button"
             onclick={() => openEdit(wallet)}
-            class="flex-1 bg-primary-bg text-primary-dark font-bold px-4 py-2 rounded-round hover:bg-primary-light hover:text-white transition-colors"
+            class="flex-1 bg-primary-bg text-primary-dark font-bold px-4 py-2 rounded-lg hover:bg-primary-light hover:text-white transition-colors"
           >
             Edit
           </button>
@@ -94,7 +105,7 @@
             onclick={() => { if (wallet.id !== undefined) void handleDelete(wallet.id); }}
             disabled={wallet.id === undefined}
             aria-label={`Hapus dompet ${wallet.nama}`}
-            class="flex-1 bg-red-50 text-coral-dark font-bold px-4 py-2 rounded-round hover:bg-coral hover:text-white transition-colors disabled:opacity-50"
+            class="flex-1 bg-red-50 text-coral-dark dark:text-primary-bg font-bold px-4 py-2 rounded-lg hover:bg-coral hover:text-white transition-colors disabled:opacity-50"
           >
             Hapus
           </button>
