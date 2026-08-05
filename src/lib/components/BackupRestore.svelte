@@ -98,7 +98,7 @@
       type="button"
       onclick={handleExport}
       disabled={isExporting || isImporting}
-      class="w-full bg-gradient-to-r from-sky to-[#3498db] text-white font-extrabold py-3 rounded-xl shadow-sky-glow hover:scale-[0.99] transition-transform flex items-center justify-center gap-2 disabled:opacity-50"
+      class="w-full bg-gradient-to-r from-sky to-[#3498db] text-white font-extrabold py-3 rounded-xl shadow-sm hover:scale-[0.99] transition-transform flex items-center justify-center gap-2 disabled:opacity-50"
     >
       {isExporting ? 'Membuat cadangan...' : 'Cadangkan data'}
     </button>

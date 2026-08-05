@@ -100,7 +100,7 @@
             autocomplete="off"
             required
             placeholder="Contoh: Tunai, BCA, GoPay"
-            class="w-full px-4 py-3 bg-cream border-2 border-transparent rounded-lg focus:border-accent focus:bg-surface-card focus:shadow-focus transition-all text-text-primary font-bold placeholder:text-gray-400 placeholder:font-medium"
+            class="w-full px-4 py-3 bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors border-2 border-transparent rounded-lg focus:border-accent focus:bg-surface-card focus:shadow-focus transition-all text-text-primary font-bold placeholder:text-gray-400 placeholder:font-medium"
           />
         </div>
 
@@ -114,7 +114,7 @@
               bind:value={saldo_awal}
               step="1000"
               placeholder="0"
-              class="w-full px-4 py-3 bg-cream border-2 border-transparent rounded-lg focus:border-accent focus:bg-surface-card focus:shadow-focus transition-all text-text-primary font-bold"
+              class="w-full px-4 py-3 bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors border-2 border-transparent rounded-lg focus:border-accent focus:bg-surface-card focus:shadow-focus transition-all text-text-primary font-bold"
             />
           </div>
         {/if}
@@ -146,7 +146,7 @@
                 bind:value={newCurrentSaldo}
                 step="1000"
                 aria-describedby="wallet-recorded-balance"
-                class="w-full px-4 py-3 bg-cream border-2 border-transparent rounded-lg focus:border-accent focus:bg-surface-card focus:shadow-focus transition-all text-text-primary font-bold"
+                class="w-full px-4 py-3 bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors border-2 border-transparent rounded-lg focus:border-accent focus:bg-surface-card focus:shadow-focus transition-all text-text-primary font-bold"
               />
               <p id="wallet-recorded-balance" class="text-xs text-text-muted mt-2 font-bold text-right">
                 Saldo tercatat: Rp {currentSaldoOriginal.toLocaleString('id-ID')}
@@ -161,14 +161,14 @@
           type="button"
           onclick={() => oncancel?.()}
           disabled={submitting}
-          class="flex-1 px-4 py-3 bg-gray-100 rounded-round text-text-secondary font-bold hover:bg-gray-200 transition-colors disabled:opacity-50"
+          class="flex-1 px-4 py-3 bg-gray-100 rounded-lg text-text-secondary font-bold hover:bg-gray-200 transition-colors disabled:opacity-50"
         >
           Batal
         </button>
         <button
           type="submit"
           disabled={submitting}
-          class="flex-[2] bg-gradient-to-r from-primary to-primary-light text-white px-6 py-3 rounded-round shadow-teal-glow hover:scale-[0.98] transition-transform font-extrabold text-lg disabled:opacity-50"
+          class="flex-[2] bg-gradient-to-r from-primary to-primary-light text-white dark:text-primary-bg px-6 py-3 rounded-lg shadow-sm hover:scale-[0.98] transition-transform font-extrabold text-lg disabled:opacity-50"
         >
           {submitting ? 'Menyimpan…' : editId !== null ? 'Simpan' : 'Tambah'}
         </button>

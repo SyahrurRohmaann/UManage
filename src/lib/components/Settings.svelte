@@ -53,10 +53,10 @@
 <div class="max-w-xl mx-auto p-4 space-y-6">
   <h1 class="text-2xl font-bold">Pengaturan</h1>
 
-  <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+  <section class="bg-gray-50 p-6 rounded-xl shadow-sm border border-gray-100">
     <div class="flex items-start justify-between mb-4">
       <div>
-        <h2 class="text-lg font-semibold text-gray-900">Notifikasi Pengingat Jatuh Tempo</h2>
+        <h2 class="text-lg font-semibold text-primary-dark">Notifikasi Pengingat Jatuh Tempo</h2>
         <p class="text-sm text-gray-500 mt-1">
           Pengingat muncul saat aplikasi dibuka. Mengingatkan hutang/piutang yang mendekati jatuh tempo.
         </p>
@@ -77,7 +77,7 @@
         </label>
         <select 
           id="daysBefore"
-          class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+          class="bg-gray-50 border border-gray-300 text-grey-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
           value={settings.daysBefore}
           onchange={updateDaysBefore}
         >

@@ -800,15 +800,25 @@ export interface DashboardTopCategory {
   total: number;
 }
 
+export interface DashboardMonthlyPoint {
+  month: number;
+  year: number;
+  income: number;
+  expense: number;
+}
+
 export interface DashboardSummary {
   income: number;
   expense: number;
+  prevIncome: number;
+  prevExpense: number;
   net: number;
   totalBalance: number;
   walletCount: number;
   month: number;
   year: number;
   dailyTrend: DashboardDailyPoint[];
+  monthlyTrend: DashboardMonthlyPoint[];
   topCategories: DashboardTopCategory[];
 }
 
@@ -817,9 +827,17 @@ export async function getDashboardSummary(date: Date = new Date()): Promise<Dash
     db.transactions.toArray(), db.wallets.toArray(), db.categories.toArray()
   ]);
   const year = date.getFullYear();
-  const month = date.getMonth() + 1;
+  const month = date.getMonth() + 1; // 1-indexed
   const start = new Date(year, month - 1, 1).getTime();
   const end = new Date(year, month, 1).getTime();
+
+  // Prev month calculations
+  const prevMonthStart = new Date(year, month - 2, 1).getTime();
+  const prevMonthEnd = new Date(year, month - 1, 1).getTime();
+  const prevMonthTransactions = transactions.filter((transaction) => transaction.tanggal >= prevMonthStart && transaction.tanggal < prevMonthEnd);
+  const prevIncome = prevMonthTransactions.filter((transaction) => transaction.tipe === 'income').reduce((sum, transaction) => sum + transaction.nominal, 0);
+  const prevExpense = prevMonthTransactions.filter((transaction) => transaction.tipe === 'expense').reduce((sum, transaction) => sum + transaction.nominal, 0);
+
   const monthTransactions = transactions.filter((transaction) => transaction.tanggal >= start && transaction.tanggal < end);
   const income = monthTransactions.filter((transaction) => transaction.tipe === 'income').reduce((sum, transaction) => sum + transaction.nominal, 0);
   const expense = monthTransactions.filter((transaction) => transaction.tipe === 'expense').reduce((sum, transaction) => sum + transaction.nominal, 0);
@@ -839,6 +857,23 @@ export async function getDashboardSummary(date: Date = new Date()): Promise<Dash
     }
     daily.set(tanggal, point);
   }
+
+  // 6 month trend calculations
+  const monthlyTrend: DashboardMonthlyPoint[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const mStart = new Date(year, month - 1 - i, 1);
+    const mEnd = new Date(year, month - i, 1);
+    const mTrans = transactions.filter(t => t.tanggal >= mStart.getTime() && t.tanggal < mEnd.getTime());
+    const mIncome = mTrans.filter(t => t.tipe === 'income').reduce((s, t) => s + t.nominal, 0);
+    const mExpense = mTrans.filter(t => t.tipe === 'expense').reduce((s, t) => s + t.nominal, 0);
+    monthlyTrend.push({
+      month: mStart.getMonth() + 1,
+      year: mStart.getFullYear(),
+      income: mIncome,
+      expense: mExpense
+    });
+  }
+
   const categoryById = new Map(categories.flatMap((category) => category.id === undefined ? [] : [[category.id, category] as const]));
   const topCategories = [...categoryTotals.entries()]
     .map(([categoryId, total]) => ({
@@ -853,12 +888,15 @@ export async function getDashboardSummary(date: Date = new Date()): Promise<Dash
   return {
     income,
     expense,
+    prevIncome,
+    prevExpense,
     net: income - expense,
     totalBalance: wallets.reduce((sum, wallet) => sum + wallet.saldo_awal, 0) + allIncome - allExpense,
     walletCount: wallets.length,
     month,
     year,
     dailyTrend: [...daily.values()].sort((a, b) => a.tanggal - b.tanggal),
+    monthlyTrend,
     topCategories
   };
 }

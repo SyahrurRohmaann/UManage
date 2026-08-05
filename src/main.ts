@@ -12,8 +12,8 @@ if (!appTarget) {
 
 async function bootstrap(target: HTMLElement): Promise<void> {
   target.innerHTML = `
-    <main role="status" aria-live="polite" style="min-height:100vh;display:grid;place-items:center;padding:24px;background:#fafafa;color:#1f2937;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
-      <p>Menyiapkan Uwangg...</p>
+    <main role="status" aria-live="polite" style="min-height:100vh;display:grid;place-items:center;padding:24px;background:#f8fafc;color:#0f172a;font-family:'Geist',-apple-system,BlinkMacSystemFont,sans-serif">
+      <p>Menyiapkan Kinetic Finance...</p>
     </main>
   `
 
@@ -25,10 +25,10 @@ async function bootstrap(target: HTMLElement): Promise<void> {
   } catch (error: unknown) {
     console.error('Gagal memulai Uwangg:', error)
     target.innerHTML = `
-      <main role="alert" style="min-height:100vh;display:grid;place-items:center;padding:24px;background:#fafafa;color:#1f2937;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
-        <section style="max-width:420px;padding:24px;border:1px solid #e5e7eb;border-radius:16px;background:#fff;text-align:center;box-shadow:0 4px 6px rgb(0 0 0 / .08)">
-          <h1 style="margin:0 0 8px;font-size:24px">Uwangg gagal dimulai</h1>
-          <p style="margin:0;color:#6b7280">Data lokal tidak dapat disiapkan. Muat ulang aplikasi untuk mencoba lagi.</p>
+      <main role="alert" style="min-height:100vh;display:grid;place-items:center;padding:24px;background:#f8fafc;color:#0f172a;font-family:'Geist',-apple-system,BlinkMacSystemFont,sans-serif">
+        <section style="max-width:420px;padding:24px;border:1px solid #e2e8f0;border-radius:16px;background:#fff;text-align:center;box-shadow:0 4px 6px rgb(0 0 0 / .08)">
+          <h1 style="margin:0 0 8px;font-size:24px">Gagal memulai aplikasi</h1>
+          <p style="margin:0;color:#64748b">Data lokal tidak dapat disiapkan. Muat ulang aplikasi untuk mencoba lagi.</p>
         </section>
       </main>
     `

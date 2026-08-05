@@ -19,7 +19,7 @@ async function resetApp(page: Page): Promise<void> {
 }
 
 async function openTab(page: Page, name: 'Ringkasan' | 'Transaksi' | 'Hutang' | 'Patungan'): Promise<void> {
-  await page.getByRole('navigation', { name: 'Navigasi utama' }).getByRole('button', { name, exact: true }).click();
+  await page.getByRole('navigation', { name: 'Navigasi utama' }).first().getByRole('button', { name, exact: true }).click();
 }
 
 async function addTransaction(page: Page, type: 'Pemasukan' | 'Pengeluaran', amount: string, note: string): Promise<void> {
@@ -30,7 +30,7 @@ async function addTransaction(page: Page, type: 'Pemasukan' | 'Pengeluaran', amo
   await dialog.getByRole('spinbutton', { name: 'Nominal (Rp)' }).fill(amount);
   await dialog.getByRole('textbox', { name: 'Catatan' }).fill(note);
   await dialog.getByRole('button', { name: 'Simpan' }).click();
-  await expect(page.getByText(note, { exact: true })).toBeVisible();
+  await expect(page.getByText(note, { exact: true }).first()).toBeVisible();
 }
 
 test.beforeEach(async ({ page }) => {
@@ -69,12 +69,12 @@ test('wallet transfer preserves total and appears in history', async ({ page }) 
   await dialog.getByRole('combobox', { name: 'Wallet tujuan' }).selectOption({ label: 'Bank' });
   await dialog.getByRole('textbox', { name: 'Catatan' }).fill('Pindah dana E2E');
   await dialog.getByRole('button', { name: 'Simpan' }).click();
-  await expect(page.getByText('Pindah dana E2E', { exact: true })).toHaveCount(2);
+  await expect(page.getByText('Pindah dana E2E', { exact: true })).toHaveCount(4); // Desktop + mobile views = 4 elements for 2 transactions
 
   await openTab(page, 'Ringkasan');
   await expect(page.getByRole('heading', { name: 'Rp 200.000' })).toBeVisible();
   await page.getByRole('tab', { name: 'Riwayat' }).click();
-  await expect(page.getByText('Pindah dana E2E', { exact: true })).toHaveCount(2);
+  await expect(page.getByText('Pindah dana E2E', { exact: true })).toHaveCount(4);
 });
 
 test('debt partial payment updates wallet and remaining amount', async ({ page }) => {
@@ -125,7 +125,7 @@ test('creates basic patungan through practical selectors', async ({ page }) => {
 });
 
 test('settings opens restore dialog with generated valid backup', async ({ page }) => {
-  await page.getByRole('button', { name: 'Buka pengaturan' }).click();
+  await page.getByRole('button', { name: /pengaturan/i }).first().click();
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Cadangkan data' }).click();
   const download = await downloadPromise;
