@@ -42,18 +42,18 @@ Pastikan Anda memiliki [Node.js](https://nodejs.org/) yang terinstall di perangk
 ### Instalasi:
 
 1. Clone repositori ini:
-   `ash
-   git clone <url-repo-anda>
+   `
+   git clone <https://github.com/SyahrurRohmaann/UManage.git>
    cd Uwangg
    `
 
 2. Instal dependensi:
-   `ash
+   `
    npm install
    `
 
 3. Jalankan development server:
-   `ash
+   `
    npm run dev
    `
    *Aplikasi akan dapat diakses secara bawaan di \http://localhost:5173\.*
@@ -61,7 +61,7 @@ Pastikan Anda memiliki [Node.js](https://nodejs.org/) yang terinstall di perangk
 ### Build untuk Produksi:
 Untuk mem-build proyek secara penuh untuk keperluan *deployment* (ke platform seperti Vercel, Netlify, atau Firebase):
 
-`ash
+`
 npm run build
 npm run preview   # Untuk melihat hasil build lokal
 `
@@ -70,7 +70,7 @@ npm run preview   # Untuk melihat hasil build lokal
 
 Aplikasi memiliki *coverage* Svelte checking, Vitest, dan uji end-to-end yang solid:
 
-`ash
+`
 npm run check  # Menjalankan pemeriksaan Svelte & tipe TypeScript 
 npm run test   # Menjalankan Vitest (Unit Testing pada file .test.ts)
 npm run e2e    # Menjalankan Playwright testing
