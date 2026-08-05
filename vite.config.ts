@@ -9,11 +9,11 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Uwangg',
+        name: 'Kinetic Finance (Uwangg)',
         short_name: 'Uwangg',
-        description: 'Catat Uang, Hutang, Patungan',
-        theme_color: '#0d9488',
-        background_color: '#fafafa',
+        description: 'Aplikasi pencatatan keuangan pribadi minimalis',
+        theme_color: '#0f172a',
+        background_color: '#f8fafc',
         display: 'standalone',
         lang: 'id',
         icons: [

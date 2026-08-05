@@ -1,34 +1,81 @@
-# Uwangg
+# Kinetic Finance (Uwangg)
 
-PWA pencatatan keuangan pribadi untuk transaksi, hutang/piutang, dan patungan. Uwangg memakai penyimpanan lokal offline-first melalui Dexie.js dan IndexedDB.
+**Kinetic Finance (Uwangg)** adalah Progressive Web App (PWA) pengelolaan keuangan pribadi offline-first yang dirancang dengan filosofi desain minimalis modern. Aplikasi ini membantu pengguna melacak transaksi, mencatat hutang-piutang, menghitung patungan (split bill), serta mengatur anggaran dengan aman dan fungsional langsung dari perangkat tanpa memerlukan koneksi internet.
 
-## Fondasi MVP
+![Kinetic Finance Mockup](screenshot.png) *(Opsional: Ganti dengan jalur gambar Anda)*
 
-- Svelte 5 dengan Vite
-- TypeScript
-- Dexie.js untuk IndexedDB
-- Tailwind CSS
-- `vite-plugin-pwa`
-- npm
+## ?? Fitur Utama (MVP)
 
-## Pengembangan
+Aplikasi memiliki antarmuka responsif *desktop-first* (dengan sidebar pada layar besar) dan adaptasi mulus untuk perangkat mobile (dengan *bottom navigation*).
 
-Butuh Node.js dan npm.
+*   **?? Dashboard & Tren:** 
+    Ringkasan total saldo, rincian arus kas masuk/keluar bulan berjalan dengan indikator perbandingan (vs bulan lalu), serta grafik tren historis selama 6 bulan terakhir.
+*   **?? Transaksi Harian:** 
+    Pencatatan pendapatan, pengeluaran, dan transfer antar-wallet. Menyertakan tabel riwayat lengkap di desktop dan kartu pencarian cerdas di mobile.
+*   **?? Hutang & Piutang:** 
+    Mengelola hutang piutang antar-kontak secara spesifik, riwayat cicilan, hingga kalkulasi pengingat jatuh tempo.
+*   **?? Patungan (Split Bill):** 
+    Fitur pembagian tagihan persentase/kustom (misal untuk acara makan bersama) secara adil untuk semua partisipan.
+*   **?? Anggaran (Budgeting):**
+    Tentukan limit bulanan per kategori (misal: "Makanan" Rp1.000.000). Visualisasi sisa anggaran dengan indikator *Aman/Mendekati Limit/Bahaya* dan estimasi rekomendasi pengeluaran per hari.
+*   **?? Laporan & Analitik:**
+    Grafik Donut persebaran pengeluaran kategori bulan ini, ditambah modul "Wawasan" (Insights) untuk memberitahukan secara otomatis jika terjadi lonjakan boros atau berhasil berhemat.
+*   **?? Alat Pendukung:**
+    Mendukung tampilan Mode Gelap (*Dark Mode*), fitur Backup & Restore (Ekspor/Impor format JSON), dan dapat diinstal layaknya aplikasi native (PWA).
 
-```bash
-npm install
-npm run dev
-```
+## ?? Teknologi (Tech Stack)
 
-## Perintah
+*   **Framework Utama:** Svelte 5 + Vite (SPA)
+*   **Database:** Dexie.js (IndexedDB wrapper) & liveQuery untuk pembaruan *state* reaktif. *Offline-first*.
+*   **Styling:** Tailwind CSS (Palet modern: Slate, Emerald, Rose. Tipografi: Geist)
+*   **Visualisasi Data:** Chart.js 
+*   **PWA:** ite-plugin-pwa untuk fungsionalitas Service Worker, caching, dan instalasi *home screen*.
+*   **Pengujian:** Vitest (Unit Test) & Playwright (E2E Test)
 
-```bash
-npm run dev       # server pengembangan
-npm run build     # build produksi
-npm run preview   # pratinjau build produksi
-npm run test      # test unit dengan Vitest
-npm run lint      # quality gate lint dan tipe
-npm run check     # pemeriksaan Svelte dan TypeScript
-```
+## ?? Cara Menjalankan Aplikasi Lokal
 
-Spesifikasi produk ada di `docs/prd/`. Panduan desain kanonis ada di `DESIGN.md`.
+Karena aplikasi ini berjalan 100% lokal berbasis IndexedDB klien, Anda bisa langsung meluncurkannya melalui proses _build_ Vite.
+
+### Prasyarat:
+Pastikan Anda memiliki [Node.js](https://nodejs.org/) yang terinstall di perangkat Anda.
+
+### Instalasi:
+
+1. Clone repositori ini:
+   `ash
+   git clone <url-repo-anda>
+   cd Uwangg
+   `
+
+2. Instal dependensi:
+   `ash
+   npm install
+   `
+
+3. Jalankan development server:
+   `ash
+   npm run dev
+   `
+   *Aplikasi akan dapat diakses secara bawaan di \http://localhost:5173\.*
+
+### Build untuk Produksi:
+Untuk mem-build proyek secara penuh untuk keperluan *deployment* (ke platform seperti Vercel, Netlify, atau Firebase):
+
+`ash
+npm run build
+npm run preview   # Untuk melihat hasil build lokal
+`
+
+## ?? Pengujian (Testing)
+
+Aplikasi memiliki *coverage* Svelte checking, Vitest, dan uji end-to-end yang solid:
+
+`ash
+npm run check  # Menjalankan pemeriksaan Svelte & tipe TypeScript 
+npm run test   # Menjalankan Vitest (Unit Testing pada file .test.ts)
+npm run e2e    # Menjalankan Playwright testing
+`
+
+## ??? Privasi dan Manajemen Data
+
+Aplikasi didesain untuk **privasi mutlak**. Semua data Anda (saldo, hutang, riwayat transaksi) murni direkam melalui IndexedDB peramban lokal perangkat Anda. **Aplikasi tidak mengirimkan transaksi keuangan ke server apapun.** Untuk memindahkan data ke perangkat/peramban lain, pengguna harus menggunakan fitur "Pengaturan -> Cadangkan data / Pulihkan".

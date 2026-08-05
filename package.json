@@ -29,6 +29,7 @@
     "vitest": "^4.1.10"
   },
   "dependencies": {
+    "chart.js": "^4.5.1",
     "dexie": "^4.4.4",
     "dexie-export-import": "^4.4.0",
     "lucide": "^1.28.0",
