@@ -43,6 +43,7 @@ export interface Debt {
   catatan?: string;
   status: 'aktif' | 'lunas';
   created_at: number;
+  reminderDisabled?: boolean;
 }
 
 export interface DebtPayment {
@@ -94,6 +95,21 @@ export interface RecurringTransaction {
   aktif: boolean;
 }
 
+export interface ReminderSettings {
+  id?: number;
+  enabled: boolean;
+  daysBefore: number;
+  notifPermissionAsked: boolean;
+  updatedAt: number;
+}
+
+export interface ReminderLog {
+  id?: number;
+  debtId: number;
+  notifiedDate: string;
+  createdAt: number;
+}
+
 export class MoneyTrackerDB extends Dexie {
   wallets!: Table<Wallet>;
   categories!: Table<Category>;
@@ -106,6 +122,8 @@ export class MoneyTrackerDB extends Dexie {
   patungan_items!: Table<PatunganItem>;
   budgets!: Table<Budget>;
   recurring_transactions!: Table<RecurringTransaction>;
+  reminderSettings!: Table<ReminderSettings>;
+  reminderLogs!: Table<ReminderLog>;
 
   constructor() {
     super('MoneyTrackerDB');
@@ -121,6 +139,13 @@ export class MoneyTrackerDB extends Dexie {
       patungan_items: '++id, session_id, nama_item, harga',
       budgets: '++id, category_id, bulan, tahun, limit_nominal',
       recurring_transactions: '++id, transaction_template_id, frekuensi, tanggal_mulai, tanggal_berikutnya, aktif'
+    });
+    this.version(2).stores({
+      reminderSettings: '++id, enabled, daysBefore, notifPermissionAsked, updatedAt',
+      reminderLogs: '++id, debtId, notifiedDate, createdAt'
+    }).upgrade(tx => {
+      // Add new fields to existing table without overriding the schema
+      // (Dexie doesn't require schema changes for optional fields like reminderDisabled)
     });
   }
 }
@@ -149,15 +174,24 @@ const SEED_WALLETS: Array<Omit<Wallet, 'id' | 'created_at'>> = [
 let initialization: Promise<void> | undefined;
 
 /** Opens and seeds the database once. Concurrent and repeated calls share the same work. */
-export function initDB(): Promise<void> {
+  export function initDB(): Promise<void> {
   if (!initialization) {
-    initialization = db.transaction('rw', db.categories, db.wallets, async () => {
+    initialization = db.transaction('rw', db.categories, db.wallets, db.reminderSettings, async () => {
       if ((await db.categories.count()) === 0) {
         await db.categories.bulkAdd(SEED_CATEGORIES);
       }
       if ((await db.wallets.count()) === 0) {
         const createdAt = Date.now();
         await db.wallets.bulkAdd(SEED_WALLETS.map((wallet) => ({ ...wallet, created_at: createdAt })));
+      }
+      if ((await db.reminderSettings.count()) === 0) {
+        await db.reminderSettings.add({
+          id: 1,
+          enabled: false,
+          daysBefore: 3,
+          notifPermissionAsked: false,
+          updatedAt: Date.now()
+        });
       }
     }).finally(() => {
       initialization = undefined;
