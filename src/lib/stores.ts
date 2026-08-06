@@ -257,7 +257,7 @@ abstract class ReactiveDexieStore<T> implements Readable<ReactiveState<T>> {
 }
 
 async function queryWallets(): Promise<UIWallet[]> {
-  const [wallets, transactions] = await Promise.all([db.wallets.toArray(), db.transactions.toArray()]);
+  const [wallets, transactions] = await Promise.all([db.wallets.filter(w => !w.deleted_at).toArray(), db.transactions.filter(t => !t.deleted_at).toArray()]);
   const changes = new Map<number, number>();
   for (const transaction of transactions) {
     const delta = transaction.tipe === 'income' ? transaction.nominal : transaction.tipe === 'expense' ? -transaction.nominal : 0;
@@ -287,19 +287,14 @@ class WalletStore extends ReactiveDexieStore<UIWallet[]> {
   }
 
   async deleteWallet(id: number): Promise<void> {
-    await db.transaction('rw', db.wallets, db.transactions, async () => {
-      if (await db.transactions.where('wallet_id').equals(id).count()) {
-        throw new Error('Wallet cannot be deleted because it is referenced by transactions.');
-      }
-      await db.wallets.delete(id);
-    });
+    await db.wallets.update(id, { deleted_at: Date.now() });
   }
 
   get wallets(): UIWallet[] { return this.data; }
 }
 
 class CategoryStore extends ReactiveDexieStore<Category[]> {
-  constructor() { super([], () => db.categories.toArray()); }
+  constructor() { super([], async () => (await db.categories.filter(c => !c.deleted_at).toArray())); }
 
   async addCategory(data: AddCategoryInput): Promise<number> {
     if (!data.nama.trim()) throw new Error('Category name is required.');
@@ -311,23 +306,14 @@ class CategoryStore extends ReactiveDexieStore<Category[]> {
   }
 
   async deleteCategory(id: number): Promise<void> {
-    await db.transaction('rw', db.categories, db.transactions, db.budgets, async () => {
-      const [transactionCount, budgetCount] = await Promise.all([
-        db.transactions.where('category_id').equals(id).count(),
-        db.budgets.where('category_id').equals(id).count()
-      ]);
-      if (transactionCount || budgetCount) {
-        throw new Error('Category cannot be deleted because it is referenced by transactions or budgets.');
-      }
-      await db.categories.delete(id);
-    });
+    await db.categories.update(id, { deleted_at: Date.now() });
   }
 
   get categories(): Category[] { return this.data; }
 }
 
 class TransactionStore extends ReactiveDexieStore<Transaction[]> {
-  constructor() { super([], () => db.transactions.orderBy('tanggal').reverse().toArray()); }
+  constructor() { super([], async () => (await db.transactions.orderBy('tanggal').reverse().filter(t => !t.deleted_at).toArray())); }
 
   async addTransaction(data: AddTransactionInput): Promise<number> {
     requirePositive(data.nominal, 'Transaction amount');
@@ -396,14 +382,14 @@ class TransactionStore extends ReactiveDexieStore<Transaction[]> {
       }
       const marker = tagTokens(transaction.tag).find((tag) => tag.startsWith('transfer:'));
       if (!marker) {
-        await db.transactions.delete(id);
+        await db.transactions.update(id, { deleted_at: Date.now() });
         return;
       }
       const transactions = await db.transactions.toArray();
       const pairIds = transactions
         .filter((candidate) => candidate.tag?.split(/\s+/).includes(marker))
         .flatMap((candidate) => candidate.id === undefined ? [] : [candidate.id]);
-      await db.transactions.bulkDelete(pairIds);
+      await Promise.all(pairIds.map(pid => db.transactions.update(pid, { deleted_at: Date.now() })));
     });
   }
   get transactions(): Transaction[] { return this.data; }
@@ -419,16 +405,7 @@ class ContactStore extends ReactiveDexieStore<Contact[]> {
   }
 
   async deleteContact(id: number): Promise<void> {
-    await db.transaction('rw', db.contacts, db.debts, db.patungan_participants, async () => {
-      const [debtCount, participantCount] = await Promise.all([
-        db.debts.where('contact_id').equals(id).count(),
-        db.patungan_participants.where('contact_id').equals(id).count()
-      ]);
-      if (debtCount || participantCount) {
-        throw new Error('Kontak tidak dapat dihapus karena masih digunakan oleh hutang/piutang atau peserta patungan.');
-      }
-      await db.contacts.delete(id);
-    });
+    await db.contacts.update(id, { deleted_at: Date.now() });
   }
 
   async softDeleteContact(id: number): Promise<void> {
@@ -439,7 +416,11 @@ class ContactStore extends ReactiveDexieStore<Contact[]> {
 
 async function queryDebts(): Promise<UIDebt[]> {
   const [debts, payments, contacts, transactions, wallets] = await Promise.all([
-    db.debts.toArray(), db.debt_payments.toArray(), db.contacts.toArray(), db.transactions.toArray(), db.wallets.toArray()
+    db.debts.filter(d => !d.deleted_at).toArray(), 
+    db.debt_payments.filter(p => !p.deleted_at).toArray(), 
+    db.contacts.filter(c => !c.deleted_at).toArray(), 
+    db.transactions.filter(t => !t.deleted_at).toArray(), 
+    db.wallets.filter(w => !w.deleted_at).toArray()
   ]);
   const contactNames = new Map(contacts.flatMap((contact) => contact.id === undefined ? [] : [[contact.id, contact.nama] as const]));
   const walletsById = new Map(wallets.flatMap((wallet) => wallet.id === undefined ? [] : [[wallet.id, wallet] as const]));
@@ -634,10 +615,10 @@ class DebtStore extends ReactiveDexieStore<UIDebt[]> {
       if (!payment) return;
       const debt = await db.debts.get(payment.debt_id);
       const transaction = await findPaymentTransaction(paymentId);
-      if (transaction?.id !== undefined) await db.transactions.delete(transaction.id);
-      await db.debt_payments.delete(paymentId);
+      if (transaction?.id !== undefined) await db.transactions.update(transaction.id, { deleted_at: Date.now() });
+      await db.debt_payments.update(paymentId, { deleted_at: Date.now() });
       if (debt) {
-        const paid = (await db.debt_payments.where('debt_id').equals(payment.debt_id).toArray())
+        const paid = (await db.debt_payments.where('debt_id').equals(payment.debt_id).filter(p => !p.deleted_at).toArray())
           .reduce((sum, candidate) => sum + candidate.nominal, 0);
         await db.debts.update(payment.debt_id, { status: paid === debt.nominal_awal ? 'lunas' : 'aktif' });
       }
@@ -646,11 +627,15 @@ class DebtStore extends ReactiveDexieStore<UIDebt[]> {
 
   async deleteDebt(id: number): Promise<void> {
     await db.transaction('rw', db.debts, db.debt_payments, db.transactions, async () => {
-      const payments = await db.debt_payments.where('debt_id').equals(id).toArray();
+      const payments = await db.debt_payments.where('debt_id').equals(id).filter(p => !p.deleted_at).toArray();
       const transactions = await Promise.all(payments.map((payment) => findPaymentTransaction(payment.id!)));
-      await db.transactions.bulkDelete(transactions.flatMap((transaction) => transaction?.id === undefined ? [] : [transaction.id]));
-      await db.debt_payments.where('debt_id').equals(id).delete();
-      await db.debts.delete(id);
+      const txIds = transactions.flatMap((transaction) => transaction?.id === undefined ? [] : [transaction.id]);
+      await Promise.all(txIds.map(tid => db.transactions.update(tid, { deleted_at: Date.now() })));
+      
+      const paymentIds = payments.map(p => p.id!);
+      await Promise.all(paymentIds.map(pid => db.debt_payments.update(pid, { deleted_at: Date.now() })));
+      
+      await db.debts.update(id, { deleted_at: Date.now() });
     });
   }
 
@@ -659,7 +644,9 @@ class DebtStore extends ReactiveDexieStore<UIDebt[]> {
 
 async function queryPatunganSessions(): Promise<UIPatunganSession[]> {
   const [sessions, items, participants] = await Promise.all([
-    db.patungan_sessions.toArray(), db.patungan_items.toArray(), db.patungan_participants.toArray()
+    db.patungan_sessions.filter(s => !s.deleted_at).toArray(), 
+    db.patungan_items.filter(i => !i.deleted_at).toArray(), 
+    db.patungan_participants.filter(p => !p.deleted_at).toArray()
   ]);
   return sessions.map((session) => {
     const sessionItems = items.filter((item) => item.session_id === session.id);
@@ -746,20 +733,39 @@ class PatunganStore extends ReactiveDexieStore<UIPatunganSession[]> {
     );
   }
 
-  async deleteSession(id: number): Promise<void> {
-    await db.transaction('rw', db.patungan_sessions, db.patungan_items, db.patungan_participants, db.debts, async () => {
+  async deleteSession(id: number, force: boolean = false): Promise<void> {
+    await db.transaction('rw', db.patungan_sessions, db.patungan_items, db.patungan_participants, db.debts, db.debt_payments, db.transactions, async () => {
       const session = await db.patungan_sessions.get(id);
       if (!session) return;
       const marker = patunganDebtMarker(id);
-      const debts = await db.debts.toArray();
-      const linked = debts.some((debt) => debt.catatan?.includes(marker));
-      const ambiguousLegacy = debts.some((debt) => debt.catatan === `Patungan: ${session.nama_sesi}`);
-      if (linked || ambiguousLegacy) {
+      const debts = await db.debts.filter(d => !d.deleted_at).toArray();
+      const linkedDebts = debts.filter((debt) => debt.catatan?.includes(marker) || debt.catatan === `Patungan: ${session.nama_sesi}`);
+      
+      if (linkedDebts.length > 0 && !force) {
         throw new Error('Session deletion blocked: generated debt exists. Delete or detach that debt first; session deletion intentionally only removes session, items, and participants.');
       }
-      await db.patungan_items.where('session_id').equals(id).delete();
-      await db.patungan_participants.where('session_id').equals(id).delete();
-      await db.patungan_sessions.delete(id);
+
+      if (linkedDebts.length > 0 && force) {
+        for (const debt of linkedDebts) {
+          const payments = await db.debt_payments.where('debt_id').equals(debt.id!).filter(p => !p.deleted_at).toArray();
+          const transactions = await Promise.all(payments.map((payment) => findPaymentTransaction(payment.id!)));
+          const txIds = transactions.flatMap((transaction) => transaction?.id === undefined ? [] : [transaction.id]);
+          await Promise.all(txIds.map(tid => db.transactions.update(tid, { deleted_at: Date.now() })));
+          
+          const paymentIds = payments.map(p => p.id!);
+          await Promise.all(paymentIds.map(pid => db.debt_payments.update(pid, { deleted_at: Date.now() })));
+          
+          await db.debts.update(debt.id!, { deleted_at: Date.now() });
+        }
+      }
+      
+      const items = await db.patungan_items.where('session_id').equals(id).toArray();
+      await Promise.all(items.map(i => db.patungan_items.update(i.id!, { deleted_at: Date.now() })));
+      
+      const participants = await db.patungan_participants.where('session_id').equals(id).toArray();
+      await Promise.all(participants.map(p => db.patungan_participants.update(p.id!, { deleted_at: Date.now() })));
+      
+      await db.patungan_sessions.update(id, { deleted_at: Date.now() });
     });
   }
 
@@ -767,23 +773,23 @@ class PatunganStore extends ReactiveDexieStore<UIPatunganSession[]> {
 }
 
 class DebtPaymentStore extends ReactiveDexieStore<DebtPayment[]> {
-  constructor() { super([], () => db.debt_payments.orderBy('tanggal').reverse().toArray()); }
+  constructor() { super([], async () => (await db.debt_payments.orderBy('tanggal').reverse().filter(dp => !dp.deleted_at).toArray())); }
   get payments(): DebtPayment[] { return this.data; }
 }
 
 class BudgetStore extends ReactiveDexieStore<Budget[]> {
-  constructor() { super([], () => db.budgets.toArray()); }
+  constructor() { super([], async () => (await db.budgets.filter(b => !b.deleted_at).toArray())); }
   async addBudget(input: AddBudgetInput): Promise<number> { return db.budgets.add(input); }
   async updateBudget(id: number, updates: Partial<AddBudgetInput>): Promise<number> { return db.budgets.update(id, updates); }
-  async deleteBudget(id: number): Promise<void> { await db.budgets.delete(id); }
+  async deleteBudget(id: number): Promise<void> { await db.budgets.update(id, { deleted_at: Date.now() }); }
   get budgets(): Budget[] { return this.data; }
 }
 
 class RecurringTransactionStore extends ReactiveDexieStore<RecurringTransaction[]> {
-  constructor() { super([], () => db.recurring_transactions.toArray()); }
+  constructor() { super([], async () => (await db.recurring_transactions.filter(rt => !rt.deleted_at).toArray())); }
   async addRecurring(input: AddRecurringTransactionInput): Promise<number> { return db.recurring_transactions.add(input); }
   async updateRecurring(id: number, updates: Partial<AddRecurringTransactionInput>): Promise<number> { return db.recurring_transactions.update(id, updates); }
-  async deleteRecurring(id: number): Promise<void> { await db.recurring_transactions.delete(id); }
+  async deleteRecurring(id: number): Promise<void> { await db.recurring_transactions.update(id, { deleted_at: Date.now() }); }
   get recurringTransactions(): RecurringTransaction[] { return this.data; }
 }
 
@@ -824,7 +830,9 @@ export interface DashboardSummary {
 
 export async function getDashboardSummary(date: Date = new Date()): Promise<DashboardSummary> {
   const [transactions, wallets, categories] = await Promise.all([
-    db.transactions.toArray(), db.wallets.toArray(), db.categories.toArray()
+    db.transactions.filter(t => !t.deleted_at).toArray(), 
+    db.wallets.filter(w => !w.deleted_at).toArray(), 
+    db.categories.filter(c => !c.deleted_at).toArray()
   ]);
   const year = date.getFullYear();
   const month = date.getMonth() + 1; // 1-indexed

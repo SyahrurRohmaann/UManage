@@ -4,15 +4,15 @@
   import WalletForm from './WalletForm.svelte';
   import ConfirmationDialog from './ConfirmationDialog.svelte';
 
-  let showForm = false;
-  let editingWallet: UIWallet | null = null;
-  let editingId: number | null = null;
+  let showForm = $state(false);
+  let editingWallet = $state<UIWallet | null>(null);
+  let editingId = $state<number | null>(null);
 
-  let showConfirm = false;
-  let confirmTitle = '';
-  let confirmMessage = '';
-  let confirmText = 'Hapus';
-  let confirmAction: (() => Promise<void>) | null = null;
+  let showConfirm = $state(false);
+  let confirmTitle = $state('');
+  let confirmMessage = $state('');
+  let confirmText = $state('Hapus');
+  let confirmAction = $state<(() => Promise<void>) | null>(null);
 
   void initStores().catch((error: unknown) => {
     toastStore.error(error instanceof Error ? error.message : 'Dompet tidak dapat dimuat.');
@@ -118,3 +118,11 @@
     <WalletForm model={editingWallet} editId={editingId} onsaved={closeForm} oncancel={closeForm} />
   {/if}
 </div>
+
+<ConfirmationDialog
+  bind:show={showConfirm}
+  title={confirmTitle}
+  message={confirmMessage}
+  confirmText={confirmText}
+  onConfirm={confirmAction}
+/>

@@ -8,25 +8,29 @@
   const patunganState = patunganStore;
   const contactState = contactStore;
 
-  $: sessions = [...$patunganState.data].sort((a, b) => b.tanggal - a.tanggal);
-  $: contacts = $contactState.data;
-  $: if ($patunganState.error) toastStore.error(`Gagal memuat patungan: ${$patunganState.error}`);
-  $: if ($contactState.error) toastStore.error(`Gagal memuat kontak: ${$contactState.error}`);
-  let showModal = false;
+  const sessions = $derived([...$patunganState.data].sort((a, b) => b.tanggal - a.tanggal));
+  const contacts = $derived($contactState.data);
+  
+  $effect(() => {
+    if ($patunganState.error) toastStore.error(`Gagal memuat patungan: ${$patunganState.error}`);
+    if ($contactState.error) toastStore.error(`Gagal memuat kontak: ${$contactState.error}`);
+  });
+  
+  let showModal = $state(false);
 
-  let showConfirm = false;
-  let confirmTitle = '';
-  let confirmMessage = '';
-  let confirmText = 'Hapus';
-  let confirmAction: (() => Promise<void>) | null = null;
-  let sessionToDelete: UIPatunganSession | null = null;
+  let showConfirm = $state(false);
+  let confirmTitle = $state('');
+  let confirmMessage = $state('');
+  let confirmText = $state('Hapus');
+  let confirmAction = $state<(() => Promise<void>) | null>(null);
+  let sessionToDelete = $state<UIPatunganSession | null>(null);
 
   // Form State
-  let sessionName = '';
-  let sessionDate = new Date().toISOString().split('T')[0];
-  let items: { id: number, name: string, price: string }[] = [];
-  let participants: { id: number, contactId: number | 'new' | 'me', name: string, percent: number }[] = [];
-  let autoPiutang = false;
+  let sessionName = $state('');
+  let sessionDate = $state(new Date().toISOString().split('T')[0]);
+  let items = $state<{ id: number, name: string, price: string }[]>([]);
+  let participants = $state<{ id: number, contactId: number | 'new' | 'me', name: string, percent: number }[]>([]);
+  let autoPiutang = $state(false);
 
   function formatRupiah(amount: number) {
     return 'Rp ' + Math.abs(amount).toLocaleString('id-ID');
@@ -156,21 +160,27 @@
     }
   }
 
-  async function handleDelete(id: number) {
+  async function handleDelete(id: number, force: boolean = false) {
     const session = $patunganState.data.find(s => s.id === id);
     if (!session) return;
-    confirmTitle = 'Hapus Sesi Patungan';
-    confirmMessage = 'Hapus sesi patungan ini?';
-    confirmText = 'Hapus';
+    
+    confirmTitle = force ? 'Hapus Beserta Piutang' : 'Hapus Sesi Patungan';
+    confirmMessage = force 
+      ? 'Sesi ini terhubung dengan piutang. Apakah Anda yakin ingin menghapus sesi patungan ini beserta SEMUA catatan piutang dan riwayat pembayarannya sekaligus?' 
+      : 'Hapus sesi patungan ini?';
+    confirmText = force ? 'Ya, Hapus Semua' : 'Hapus';
     sessionToDelete = session;
+    
     confirmAction = async () => {
       try {
-        await patunganStore.deleteSession(id);
+        await patunganStore.deleteSession(id, force);
         toastStore.success('Sesi berhasil dihapus');
       } catch (error: unknown) {
         const message = getErrorMessage(error);
         if (message.includes('generated debt exists')) {
-          toastStore.error('Sesi tidak dapat dihapus karena piutang otomatis masih ada. Hapus piutang terkait lebih dahulu.');
+          showConfirm = false;
+          // Prompt for force delete
+          setTimeout(() => handleDelete(id, true), 100);
         } else {
           toastStore.error(`Gagal menghapus sesi: ${message}`);
         }
@@ -226,8 +236,8 @@
     return Object.values(groupMap).sort((a,b) => b.totalTagihan - a.totalTagihan);
   }
   
-  let viewMode: 'list' | 'grouped' = 'list';
-  let expandedGroups: Record<string, boolean> = {};
+  let viewMode = $state<'list' | 'grouped'>('list');
+  let expandedGroups = $state<Record<string, boolean>>({});
 
   function toggleGroup(name: string) {
     expandedGroups[name] = !expandedGroups[name];
@@ -236,30 +246,33 @@
 
 <div class="space-y-6">
   <!-- Header -->
-  <div class="flex justify-between items-center mb-2">
-    <h2 class="text-xl font-extrabold text-text-primary tracking-wide">Patungan</h2>
+  <div class="flex flex-col md:flex-row md:justify-between md:items-end mb-stack-lg gap-4">
+    <div>
+      <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">Patungan</h2>
+      <p class="font-body-md text-body-md text-on-surface-variant mt-1">Kelola tagihan bersama teman dan keluarga.</p>
+    </div>
     <button
       onclick={openModal}
-      class="bg-primary from-accent-light to-accent-dark text-white dark:text-primary-bg px-5 py-2.5 rounded-lg shadow-sm hover:scale-95 transition-transform font-bold flex items-center gap-2 active:bg-accent-light"
+      class="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 font-label-md text-label-md text-on-primary hover:bg-surface-tint transition-colors active:scale-95"
     >
-      <span class="text-lg leading-none">+</span>
-      <span>Buat Sesi</span>
+      <span class="material-symbols-outlined text-[18px]">add</span>
+      Buat Patungan Baru
     </button>
   </div>
   
   <!-- View Toggle -->
-  <div class="flex gap-2 p-1 bg-gray-100 rounded-lg">
+  <div class="flex items-center justify-between bg-surface-container-lowest border border-outline-variant rounded-xl p-1 mb-6">
     <button
       onclick={() => viewMode = 'list'}
-      class="{viewMode === 'list' ? 'bg-surface-card text-sky shadow-sm font-bold' : 'text-gray-500 font-medium'} flex-1 py-2 rounded-md transition-all text-sm"
+      class="flex-1 py-2 rounded-lg text-center font-label-md text-label-md {viewMode === 'list' ? 'bg-surface-container-high text-primary font-bold shadow-sm' : 'text-on-surface-variant'} transition-all"
     >
-      📋 Riwayat Sesi
+      Riwayat Sesi
     </button>
     <button
       onclick={() => viewMode = 'grouped'}
-      class="{viewMode === 'grouped' ? 'bg-surface-card text-sky shadow-sm font-bold' : 'text-gray-500 font-medium'} flex-1 py-2 rounded-md transition-all text-sm"
+      class="flex-1 py-2 rounded-lg text-center font-label-md text-label-md {viewMode === 'grouped' ? 'bg-surface-container-high text-primary font-bold shadow-sm' : 'text-on-surface-variant'} transition-all"
     >
-      👥 Rekap per Orang
+      Rekap per Orang
     </button>
   </div>
 
@@ -267,124 +280,132 @@
   <div class="space-y-4 pb-4">
     {#if viewMode === 'list'}
         {#if sessions.length === 0}
-          <div class="bg-surface-card p-10 rounded-xl shadow-card text-center border-[3px] border-dashed border-gray-200">
-            <div class="text-4xl mb-3">🍕</div>
-            <p class="text-text-secondary font-medium">Belum ada sesi patungan</p>
-            <button onclick={openModal} class="text-primary font-bold mt-3 hover:text-primary-light">Buat patungan sekarang ✨</button>
+          <div class="bg-surface-container-lowest p-10 rounded-xl text-center border-2 border-dashed border-outline-variant">
+            <p class="font-bold mb-2">Belum ada sesi patungan</p>
+            <p class="font-label-sm text-label-sm mb-4 text-on-surface-variant">Buat sesi baru untuk membagi tagihan.</p>
+            <button onclick={openModal} class="text-primary font-bold mt-3 hover:underline">Buat patungan sekarang</button>
           </div>
         {:else}
-          {#each sessions as session (session.id)}
-            <div class="bg-surface-card rounded-xl shadow-card p-5 border-l-[6px] border-sky relative overflow-hidden transition-transform hover:scale-[1.01]">
-              <div class="flex justify-between items-start mb-3">
-                <div>
-                  <h3 class="font-extrabold text-xl text-text-primary">{session.nama_sesi}</h3>
-                  <p class="text-xs font-medium text-text-muted mt-1 bg-gray-50 inline-block px-2 py-0.5 rounded-sm">
-                    {formatDate(session.tanggal)}
-                  </p>
-                </div>
-                <div class="text-right">
-                  <p class="text-xl font-extrabold text-sky">
-                    {formatRupiah(session.total || 0)}
-                  </p>
-                  <p class="text-[10px] font-bold text-text-muted uppercase mt-1 tracking-wider">Total Tagihan</p>
-                </div>
-              </div>
-
-              <div class="bg-primary-bg/50 rounded-lg p-3 mb-4">
-                <p class="text-xs font-bold text-primary-dark mb-2 uppercase tracking-wide border-b border-primary-light/20 pb-1">Partisipan ({session.participants?.length})</p>
-                <div class="grid grid-cols-2 gap-2 mt-2">
-                  {#each session.participants || [] as p}
-                    <div class="text-xs font-medium text-text-secondary flex justify-between">
-                      <span class="truncate pr-1 {p.is_talangan ? 'font-extrabold text-primary' : ''}">
-                        {p.is_talangan ? '👑 ' : ''}{p.nama}
-                      </span>
-                      <span class="font-bold text-text-primary whitespace-nowrap">{formatRupiah(((p.persen / 100) * (session.total || 0)))}</span>
+          <h3 class="font-headline-md text-headline-md font-bold text-primary mb-stack-md mt-6">Daftar Patungan</h3>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+            {#each sessions as session (session.id)}
+              <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden hover:border-outline transition-colors flex flex-col group">
+                <div class="p-6 border-b border-surface-variant bg-surface-bright flex justify-between items-start gap-4">
+                  <div class="flex items-start gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-primary-fixed flex items-center justify-center text-on-primary-fixed shrink-0">
+                      <span class="material-symbols-outlined icon-fill">group</span>
                     </div>
-                  {/each}
+                    <div>
+                      <h4 class="font-headline-md text-headline-md font-bold text-primary">{session.nama_sesi}</h4>
+                      <p class="font-label-sm text-label-sm text-on-surface-variant mt-1">{formatDate(session.tanggal)}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="p-6 flex-1">
+                  <div class="flex justify-between items-center mb-4">
+                    <span class="font-label-md text-label-md text-on-surface-variant">Total Tagihan: <strong class="text-primary">{formatRupiah(session.total || 0)}</strong></span>
+                  </div>
+                  
+                  <p class="text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-wide border-b border-outline-variant/30 pb-2">Partisipan ({session.participants?.length})</p>
+                  <ul class="space-y-0">
+                    {#each session.participants || [] as p}
+                      <li class="flex items-center justify-between py-2 border-b border-surface-variant last:border-0">
+                        <div class="flex items-center gap-3">
+                          <div class="w-8 h-8 rounded-full {p.is_talangan ? 'bg-primary text-on-primary' : 'bg-surface-variant text-on-surface-variant'} flex items-center justify-center font-bold font-label-sm">
+                            {p.nama.charAt(0).toUpperCase()}
+                          </div>
+                          <span class="font-body-md text-body-md text-primary">{p.nama} {p.is_talangan ? '(Talangan)' : ''}</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                          <span class="font-label-md text-label-md text-primary font-bold">{formatRupiah(((p.persen / 100) * (session.total || 0)))}</span>
+                        </div>
+                      </li>
+                    {/each}
+                  </ul>
+                </div>
+
+                <div class="p-4 bg-surface-bright border-t border-surface-variant flex gap-3">
+                  <a 
+                    href={generateWA(session)}
+                    target="_blank"
+                    class="flex-1 bg-secondary/10 text-secondary font-label-md text-label-md px-3 py-2.5 rounded-lg hover:bg-secondary/20 transition-colors text-center"
+                  >
+                    Bagikan WA
+                  </a>
+                  <button 
+                    onclick={() => { if(session.id) handleDelete(session.id) }}
+                    class="px-4 py-2.5 bg-error/10 text-error rounded-lg hover:bg-error/20 transition-colors font-label-md text-label-md"
+                  >
+                    Hapus
+                  </button>
                 </div>
               </div>
-
-              <div class="flex gap-2">
-                <a 
-                  href={generateWA(session)}
-                  target="_blank"
-                  class="flex-1 bg-white text-success font-bold px-3 py-2.5 rounded-lg hover:bg-success hover:text-white transition-colors text-sm text-center shadow-sm"
-                >
-                  Bagikan (WA)
-                </a>
-                <button 
-                  onclick={() => { if(session.id) handleDelete(session.id) }}
-                  class="px-4 py-2.5 bg-white text-coral rounded-lg hover:bg-coral hover:text-white transition-colors font-bold text-sm shadow-sm"
-                >
-                  Hapus
-                </button>
-              </div>
-            </div>
-          {/each}
+            {/each}
+          </div>
         {/if}
     {:else}
         {#if getGroupedSessions().length === 0}
-            <div class="bg-surface-card p-10 rounded-xl shadow-card text-center border-[3px] border-dashed border-gray-200">
-                <div class="text-4xl mb-3">👥</div>
-                <p class="text-text-secondary font-medium">Belum ada rekap hutang patungan</p>
+            <div class="bg-surface-container-lowest p-10 rounded-xl text-center border-2 border-dashed border-outline-variant">
+                <p class="font-bold mb-2">Belum ada rekap patungan</p>
             </div>
         {:else}
-            {#each getGroupedSessions() as group}
-                <div class="bg-surface-card rounded-xl shadow-card border border-gray-100 overflow-hidden transition-all">
-                  <div 
-                    class="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors"
-                    onclick={() => toggleGroup(group.contactName)}
-                    role="button"
-                    tabindex="0"
-                    onkeypress={(e) => { if(e.key === 'Enter') toggleGroup(group.contactName) }}
-                  >
-                    <div class="flex items-center gap-3">
-                      <div class="w-10 h-10 bg-sky/20 rounded-lg flex items-center justify-center text-sky font-extrabold shadow-sm">
-                        {group.contactName.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <h3 class="font-extrabold text-lg text-text-primary">{group.contactName}</h3>
-                        <p class="text-xs font-bold text-text-muted">{group.sessions.length} patungan</p>
-                      </div>
-                    </div>
-                    
-                    <div class="flex items-center gap-4 text-right">
-                      <div class="hidden sm:block">
-                        <p class="text-sm font-extrabold text-sky">{formatRupiah(group.totalTagihan)}</p>
-                        <p class="text-[10px] text-text-muted mt-1 uppercase">Total Ditagih</p>
-                      </div>
-                      <div class="text-gray-400 transform transition-transform duration-300 {expandedGroups[group.contactName] ? 'rotate-180' : ''}">
-                        ▼
-                      </div>
-                    </div>
-                  </div>
-
-                  {#if expandedGroups[group.contactName]}
-                    <div class="bg-gray-50 border-t border-gray-100 p-2 space-y-2">
-                      {#each group.sessions as s}
-                        <div class="bg-surface-card rounded-lg p-3 border-l-[4px] border-sky shadow-sm flex justify-between items-center">
-                          <div>
-                             <p class="text-sm font-bold text-text-primary">{s.sessionName}</p>
-                             <p class="text-[10px] text-text-muted">{formatDate(s.date)}</p>
-                          </div>
-                          <p class="text-sm font-extrabold text-sky">{formatRupiah(s.tagihan)}</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+              {#each getGroupedSessions() as group}
+                  <div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden transition-all group">
+                    <div 
+                      class="p-4 flex justify-between items-center cursor-pointer hover:bg-surface-container transition-colors"
+                      onclick={() => toggleGroup(group.contactName)}
+                      role="button"
+                      tabindex="0"
+                      onkeypress={(e) => { if(e.key === 'Enter') toggleGroup(group.contactName) }}
+                    >
+                      <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold shrink-0">
+                          {group.contactName.charAt(0).toUpperCase()}
                         </div>
-                      {/each}
+                        <div>
+                          <h3 class="font-label-md text-label-md font-bold text-on-surface">{group.contactName}</h3>
+                          <p class="text-xs text-on-surface-variant">{group.sessions.length} patungan</p>
+                        </div>
+                      </div>
+                      
+                      <div class="flex items-center gap-4 text-right">
+                        <div>
+                          <p class="font-label-md text-label-md font-bold text-primary">{formatRupiah(group.totalTagihan)}</p>
+                        </div>
+                        <span class="material-symbols-outlined text-on-surface-variant transition-transform duration-300 {expandedGroups[group.contactName] ? 'rotate-180' : ''}">
+                          expand_more
+                        </span>
+                      </div>
                     </div>
-                  {/if}
-                </div>
-            {/each}
+
+                    {#if expandedGroups[group.contactName]}
+                      <div class="bg-surface-bright border-t border-outline-variant p-3 space-y-2">
+                        {#each group.sessions as s}
+                          <div class="bg-surface-container-lowest rounded-lg p-3 border border-outline-variant/50 flex justify-between items-center">
+                            <div>
+                               <p class="font-label-md text-label-md text-on-surface">{s.sessionName}</p>
+                               <p class="text-xs text-on-surface-variant mt-0.5">{formatDate(s.date)}</p>
+                            </div>
+                            <p class="font-label-md text-label-md font-bold text-primary">{formatRupiah(s.tagihan)}</p>
+                          </div>
+                        {/each}
+                      </div>
+                    {/if}
+                  </div>
+              {/each}
+            </div>
         {/if}
     {/if}
   </div>
 
   <!-- Create Session Modal -->
   {#if showModal}
-    <div class="fixed inset-0 bg-primary-dark/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" role="presentation">
-      <div class="bg-surface-card rounded-xl shadow-xl w-full max-w-md relative overflow-hidden transform transition-all max-h-[90vh] flex flex-col">
-        <div class="h-2 bg-gradient-to-r from-sky to-primary w-full flex-shrink-0"></div>
+    <div class="fixed inset-0 bg-inverse-surface/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" role="presentation">
+      <div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-xl w-full max-w-md relative overflow-hidden transform transition-all max-h-[90vh] flex flex-col">
         <div class="p-6 overflow-y-auto flex-1 custom-scrollbar">
-          <h3 class="text-2xl font-extrabold text-primary-dark mb-6">🍕 Buat Sesi Patungan</h3>
+          <h3 class="font-headline-md text-headline-md font-bold text-on-surface mb-6">Buat Sesi Patungan</h3>
           
           <div class="space-y-6">
             <!-- Info Dasar -->
@@ -393,40 +414,40 @@
                 type="text"
                 bind:value={sessionName}
                 placeholder="Nama Sesi (cth: Bukber SMA)"
-                class="w-full px-4 py-3 bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors border-2 border-transparent rounded-lg focus:border-sky focus:bg-surface-card focus:shadow-sm transition-all text-text-primary font-bold placeholder:text-gray-400 text-lg"
+                class="w-full rounded-lg bg-background border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all px-4 py-3 font-label-md text-label-md text-on-surface"
               />
-              <input type="date" bind:value={sessionDate} class="w-full px-4 py-3 bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors border-2 border-transparent rounded-lg focus:border-sky text-sm font-bold"/>
+              <input type="date" bind:value={sessionDate} class="w-full rounded-lg bg-background border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all px-4 py-3 font-label-md text-label-md text-on-surface"/>
             </div>
 
             <!-- Items -->
-            <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+            <div class="bg-surface-bright rounded-xl p-4 border border-outline-variant">
               <div class="flex justify-between items-center mb-3">
-                <h4 class="font-extrabold text-text-secondary uppercase tracking-wide text-xs">Item Tagihan</h4>
-                <button onclick={addItem} class="text-sky font-bold text-xs bg-sky/10 px-2 py-1 rounded hover:bg-sky/20">+ Item</button>
+                <h4 class="font-label-sm text-label-sm font-bold text-on-surface-variant uppercase tracking-wide">Item Tagihan</h4>
+                <button onclick={addItem} class="text-primary font-label-sm text-label-sm bg-primary/10 px-2 py-1 rounded hover:bg-primary/20 transition-colors">+ Item</button>
               </div>
               
               <div class="space-y-2">
                 {#each items as item, i (item.id)}
                   <div class="flex gap-2">
-                    <input type="text" bind:value={item.name} placeholder="Nama item" class="flex-[2] px-3 py-2 bg-surface-card border border-gray-200 rounded text-sm font-bold focus:border-sky outline-none"/>
-                    <input type="number" bind:value={item.price} placeholder="Harga" class="flex-[2] px-3 py-2 bg-surface-card border border-gray-200 rounded text-sm font-bold focus:border-sky outline-none"/>
-                    <button onclick={() => removeItem(item.id)} class="flex-none px-2 text-coral hover:text-coral-dark font-bold">✕</button>
+                    <input type="text" bind:value={item.name} placeholder="Nama item" class="flex-[2] px-3 py-2 bg-background border border-outline-variant rounded-md text-sm font-bold focus:border-primary outline-none text-on-surface"/>
+                    <input type="number" bind:value={item.price} placeholder="Harga" class="flex-[2] px-3 py-2 bg-background border border-outline-variant rounded-md text-sm font-bold focus:border-primary outline-none text-on-surface"/>
+                    <button onclick={() => removeItem(item.id)} class="flex-none px-2 text-error hover:text-error/80 font-bold material-symbols-outlined text-[20px]">close</button>
                   </div>
                 {/each}
               </div>
-              <div class="mt-3 text-right">
-                <span class="text-xs font-bold text-text-muted uppercase mr-2">Total Sementara:</span>
-                <span class="text-lg font-extrabold text-sky">{formatRupiah(getTotal())}</span>
+              <div class="mt-4 pt-3 border-t border-outline-variant/50 flex justify-between items-center">
+                <span class="font-label-sm text-label-sm font-bold text-on-surface-variant uppercase">Total Sementara:</span>
+                <span class="font-headline-md text-headline-md font-bold text-primary">{formatRupiah(getTotal())}</span>
               </div>
             </div>
 
             <!-- Participants -->
-            <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+            <div class="bg-surface-bright rounded-xl p-4 border border-outline-variant">
               <div class="flex justify-between items-center mb-3">
-                <h4 class="font-extrabold text-text-secondary uppercase tracking-wide text-xs">Partisipan ({getTotalPercent()}%)</h4>
+                <h4 class="font-label-sm text-label-sm font-bold text-on-surface-variant uppercase tracking-wide">Partisipan ({getTotalPercent()}%)</h4>
                 <div class="space-x-2">
-                  <button onclick={distributePercent} class="text-primary font-bold text-xs bg-primary/10 px-2 py-1 rounded hover:bg-primary/20">Bagi Rata</button>
-                  <button onclick={addParticipant} class="text-sky font-bold text-xs bg-sky/10 px-2 py-1 rounded hover:bg-sky/20">+ Orang</button>
+                  <button onclick={distributePercent} class="text-secondary font-label-sm text-label-sm bg-secondary/10 px-2 py-1 rounded hover:bg-secondary/20 transition-colors">Bagi Rata</button>
+                  <button onclick={addParticipant} class="text-primary font-label-sm text-label-sm bg-primary/10 px-2 py-1 rounded hover:bg-primary/20 transition-colors">+ Orang</button>
                 </div>
               </div>
               
@@ -434,30 +455,30 @@
                 {#each participants as p, i (p.id)}
                   <div class="flex gap-2 items-center">
                     {#if p.contactId === 'me'}
-                      <div class="flex-[3] px-3 py-2 bg-primary-bg border border-primary-light/30 text-primary-dark rounded text-sm font-bold flex items-center">👑 Saya (Penalang)</div>
+                      <div class="flex-[3] px-3 py-2 bg-primary/10 border border-primary/20 text-primary rounded-md font-label-md text-label-md font-bold flex items-center">Saya (Penalang)</div>
                     {:else}
-                      <select bind:value={p.contactId} class="flex-none w-[100px] px-2 py-2 bg-surface-card border border-gray-200 rounded text-xs font-bold text-gray-600 outline-none">
+                      <select bind:value={p.contactId} class="flex-none w-[100px] px-2 py-2 bg-background border border-outline-variant rounded-md font-label-sm text-label-sm text-on-surface outline-none">
                         <option value="new">Baru</option>
                         {#each contacts as c}
                           <option value={c.id}>{c.nama}</option>
                         {/each}
                       </select>
                       {#if p.contactId === 'new'}
-                        <input type="text" bind:value={p.name} placeholder="Nama..." class="flex-1 min-w-0 px-2 py-2 bg-surface-card border border-gray-200 rounded text-sm font-bold focus:border-sky outline-none"/>
+                        <input type="text" bind:value={p.name} placeholder="Nama..." class="flex-1 min-w-0 px-2 py-2 bg-background border border-outline-variant rounded-md font-label-sm text-label-sm focus:border-primary outline-none text-on-surface"/>
                       {:else}
-                        <div class="flex-1 min-w-0 px-2 py-2 bg-gray-100 border border-transparent rounded text-sm font-bold text-gray-500 truncate">{contacts.find(c=>c.id===p.contactId)?.nama}</div>
+                        <div class="flex-1 min-w-0 px-2 py-2 bg-surface-container border border-transparent rounded-md font-label-sm text-label-sm text-on-surface-variant truncate">{contacts.find(c=>c.id===p.contactId)?.nama}</div>
                       {/if}
                     {/if}
                     
                     <div class="flex-none w-16 relative">
-                      <input type="number" bind:value={p.percent} class="w-full px-2 py-2 pr-5 bg-surface-card border border-gray-200 rounded text-sm font-bold text-center focus:border-sky outline-none"/>
-                      <span class="absolute right-2 top-2 text-xs font-bold text-gray-400">%</span>
+                      <input type="number" bind:value={p.percent} class="w-full px-2 py-2 pr-5 bg-background border border-outline-variant rounded-md font-label-sm text-label-sm text-center focus:border-primary outline-none text-on-surface"/>
+                      <span class="absolute right-2 top-2 font-label-sm text-label-sm text-on-surface-variant">%</span>
                     </div>
                     
                     {#if p.contactId !== 'me'}
-                      <button onclick={() => removeParticipant(p.id)} class="flex-none px-1 text-coral hover:text-coral-dark font-bold">✕</button>
+                      <button onclick={() => removeParticipant(p.id)} class="flex-none px-1 text-error hover:text-error/80 font-bold material-symbols-outlined text-[20px]">close</button>
                     {:else}
-                      <div class="w-[20px]"></div> <!-- spacer -->
+                      <div class="w-[28px]"></div> <!-- spacer -->
                     {/if}
                   </div>
                 {/each}
@@ -465,11 +486,11 @@
             </div>
 
             <!-- Auto Piutang Option -->
-            <label class="flex items-start gap-3 p-3 bg-primary-bg/50 border border-primary-light/30 rounded-xl cursor-pointer">
-              <input type="checkbox" bind:checked={autoPiutang} class="mt-1 w-4 h-4 text-primary accent-primary rounded border-gray-300"/>
+            <label class="flex items-start gap-3 p-4 bg-secondary/5 border border-secondary/20 rounded-xl cursor-pointer hover:bg-secondary/10 transition-colors">
+              <input type="checkbox" bind:checked={autoPiutang} class="mt-0.5 w-4 h-4 text-secondary accent-secondary rounded border-outline-variant"/>
               <div>
-                <p class="text-sm font-bold text-primary-dark">Catat otomatis sebagai Piutang</p>
-                <p class="text-xs font-medium text-primary-dark/70 mt-0.5">Sistem akan otomatis mencatat tagihan partisipan lain ke menu "Hutang/Piutang" karena Anda yang menalangi.</p>
+                <p class="font-label-md text-label-md font-bold text-on-surface">Catat otomatis sebagai Piutang</p>
+                <p class="text-xs mt-1 text-on-surface-variant">Sistem akan otomatis mencatat tagihan partisipan lain ke menu "Hutang/Piutang" karena Anda yang menalangi.</p>
               </div>
             </label>
           </div>
@@ -477,13 +498,13 @@
           <div class="mt-8 flex gap-3 pb-2">
             <button
               onclick={() => showModal = false}
-              class="flex-1 px-4 py-3 bg-gray-100 rounded-lg text-text-secondary font-bold hover:bg-gray-200 transition-colors"
+              class="flex-1 px-4 py-3 bg-surface-container border border-outline-variant rounded-lg text-on-surface font-label-md text-label-md hover:bg-surface-container-high transition-colors"
             >
               Batal
             </button>
             <button
               onclick={handleSave}
-              class="flex-[2] bg-gradient-to-r from-sky to-[#3498db] text-white dark:text-primary-bg px-6 py-3 rounded-lg shadow-sm hover:scale-[0.98] transition-transform font-extrabold text-lg"
+              class="flex-[2] bg-primary text-on-primary px-6 py-3 rounded-lg hover:bg-surface-tint transition-colors font-label-md text-label-md"
             >
               Selesai & Simpan
             </button>
@@ -494,6 +515,14 @@
   {/if}
 </div>
 
+<ConfirmationDialog
+  bind:show={showConfirm}
+  title={confirmTitle}
+  message={confirmMessage}
+  confirmText={confirmText}
+  onConfirm={confirmAction}
+/>
+
 <style>
   /* Custom scrollbar for modal */
   .custom-scrollbar::-webkit-scrollbar {
@@ -503,7 +532,7 @@
     background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #cbd5e1;
+    background-color: var(--color-outline-variant);
     border-radius: 20px;
   }
 </style>

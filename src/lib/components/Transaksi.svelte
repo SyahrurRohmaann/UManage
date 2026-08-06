@@ -41,7 +41,7 @@
   let confirmTitle = $state('');
   let confirmMessage = $state('');
   let confirmText = $state('Hapus');
-  let confirmAction: (() => Promise<void>) | null = null;
+  let confirmAction = $state<(() => Promise<void>) | undefined>(undefined);
 
   let categoryFormElement: HTMLElement | null = $state(null);
 
@@ -405,3 +405,12 @@
     </div>
   </div>
 {/if}
+
+<ConfirmationDialog 
+  bind:show={showConfirm}
+  title={confirmTitle}
+  message={confirmMessage}
+  confirmText={confirmText}
+  isDestructive={true}
+  onConfirm={confirmAction}
+/>

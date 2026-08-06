@@ -3,42 +3,42 @@
   import { toastStore } from '../stores/toast';
   import ConfirmationDialog from './ConfirmationDialog.svelte';
 
-  $: debts = $debtStore.data;
-  $: contacts = $contactStore.data;
-  $: wallets = $walletStore.data;
-  $: activeDebt = selectedDebtId === null ? undefined : debts.find((d) => d.id === selectedDebtId);
-  $: selectedPayment = activeDebt?.payments.find((p) => p.id === selectedPaymentId);
-  $: groups = groupedDebts(debts, filterType, filterStatus, sortBy, searchQuery);
+  let filterType = $state<'all' | 'hutang' | 'piutang'>('all');
+  let filterStatus = $state<'all' | 'aktif' | 'lunas' | 'terlambat'>('aktif');
+  let sortBy = $state<'terbaru' | 'terlama' | 'jatuh-tempo' | 'sisa-terbesar'>('terbaru');
+  let searchQuery = $state('');
+  
+  let showAdd = $state(false);
+  let showEditDebt = $state(false);
+  let showPayment = $state(false);
+  let showEditPayment = $state(false);
+  let showContact = $state(false);
+  let selectedDebtId = $state<number | null>(null);
+  let selectedPaymentId = $state<number | null>(null);
+  let contactDetail = $state<UIContactDetail | undefined>();
+  let contactDetailId = $state<number | null>(null);
+  let submitting = $state(false);
+  let detailLoading = $state(false);
 
-  let showAdd = false;
-  let showEditDebt = false;
-  let showPayment = false;
-  let showEditPayment = false;
-  let showContact = false;
-  let selectedDebtId: number | null = null;
-  let selectedPaymentId: number | null = null;
-  let contactDetail: UIContactDetail | undefined;
-  let contactDetailId: number | null = null;
-  let submitting = false;
-  let detailLoading = false;
+  const debts = $derived($debtStore.data);
+  const contacts = $derived($contactStore.data);
+  const wallets = $derived($walletStore.data);
+  const activeDebt = $derived(selectedDebtId === null ? undefined : debts.find((d) => d.id === selectedDebtId));
+  const selectedPayment = $derived(activeDebt?.payments.find((p) => p.id === selectedPaymentId));
+  const groups = $derived(groupedDebts(debts, filterType, filterStatus, sortBy, searchQuery));
 
-  let filterType: 'all' | 'hutang' | 'piutang' = 'all';
-  let filterStatus: 'all' | 'aktif' | 'lunas' | 'terlambat' = 'aktif';
-  let sortBy: 'terbaru' | 'terlama' | 'jatuh-tempo' | 'sisa-terbesar' = 'terbaru';
-  let searchQuery = '';
+  let formType = $state<'hutang' | 'piutang'>('piutang');
+  let formContactId = $state<number | 'new'>('new');
+  let formContactName = $state('');
+  let formAmount = $state('');
+  let formDate = $state(today());
+  let formDue = $state('');
+  let formNote = $state('');
 
-  let formType: 'hutang' | 'piutang' = 'piutang';
-  let formContactId: number | 'new' = 'new';
-  let formContactName = '';
-  let formAmount = '';
-  let formDate = today();
-  let formDue = '';
-  let formNote = '';
-
-  let payAmount = '';
-  let payDate = today();
-  let payWallet: number | '' = '';
-  let payNote = '';
+  let payAmount = $state('');
+  let payDate = $state(today());
+  let payWallet = $state<number | ''>('');
+  let payNote = $state('');
 
   function today(): string { return new Date().toISOString().slice(0, 10); }
   function rupiah(n: number): string { return `Rp ${Math.abs(n).toLocaleString('id-ID')}`; }
@@ -80,14 +80,14 @@
     };
   }
 
-  $: totalHutang = debts.filter((d) => d.status === 'aktif' && d.tipe === 'hutang').reduce((s, d) => s + d.sisa, 0);
-  $: totalPiutang = debts.filter((d) => d.status === 'aktif' && d.tipe === 'piutang').reduce((s, d) => s + d.sisa, 0);
+  const totalHutang = $derived(debts.filter((d) => d.status === 'aktif' && d.tipe === 'hutang').reduce((s, d) => s + d.sisa, 0));
+  const totalPiutang = $derived(debts.filter((d) => d.status === 'aktif' && d.tipe === 'piutang').reduce((s, d) => s + d.sisa, 0));
 
-  let showConfirm = false;
-  let confirmTitle = '';
-  let confirmMessage = '';
-  let confirmText = 'Hapus';
-  let confirmAction: (() => Promise<void>) | undefined = undefined;
+  let showConfirm = $state(false);
+  let confirmTitle = $state('');
+  let confirmMessage = $state('');
+  let confirmText = $state('Hapus');
+  let confirmAction = $state<(() => Promise<void>) | undefined>(undefined);
 
   function groupedDebts(
     source: UIDebt[],

@@ -5,6 +5,7 @@ export interface Wallet {
   nama: string;
   saldo_awal: number;
   created_at: number;
+  deleted_at?: number;
 }
 
 export interface Category {
@@ -13,6 +14,7 @@ export interface Category {
   tipe: 'income' | 'expense';
   ikon: string;
   warna: string;
+  deleted_at?: number;
 }
 
 export interface Transaction {
@@ -25,6 +27,7 @@ export interface Transaction {
   catatan?: string;
   tag?: string;
   created_at: number;
+  deleted_at?: number;
 }
 
 export interface Contact {
@@ -45,6 +48,7 @@ export interface Debt {
   status: 'aktif' | 'lunas';
   created_at: number;
   reminderDisabled?: boolean;
+  deleted_at?: number;
 }
 
 export interface DebtPayment {
@@ -54,6 +58,7 @@ export interface DebtPayment {
   tanggal: number;
   catatan?: string;
   created_at: number;
+  deleted_at?: number;
 }
 
 export interface PatunganSession {
@@ -61,6 +66,7 @@ export interface PatunganSession {
   nama_sesi: string;
   tanggal: number;
   created_at: number;
+  deleted_at?: number;
 }
 
 export interface PatunganParticipant {
@@ -70,6 +76,7 @@ export interface PatunganParticipant {
   nama: string;
   persen: number;
   is_talangan: boolean;
+  deleted_at?: number;
 }
 
 export interface PatunganItem {
@@ -77,6 +84,7 @@ export interface PatunganItem {
   session_id: number;
   nama_item: string;
   harga: number;
+  deleted_at?: number;
 }
 
 export interface Budget {
@@ -85,6 +93,7 @@ export interface Budget {
   bulan: number;
   tahun: number;
   limit_nominal: number;
+  deleted_at?: number;
 }
 
 export interface RecurringTransaction {
@@ -94,6 +103,7 @@ export interface RecurringTransaction {
   tanggal_mulai: number;
   tanggal_berikutnya: number;
   aktif: boolean;
+  deleted_at?: number;
 }
 
 export interface ReminderSettings {

@@ -32,11 +32,11 @@
     return 'Transfer';
   }
 
-  let showConfirm = false;
-  let confirmTitle = '';
-  let confirmMessage = '';
-  let confirmText = 'Hapus';
-  let confirmAction: (() => Promise<void>) | null = null;
+  let showConfirm = $state(false);
+  let confirmTitle = $state('');
+  let confirmMessage = $state('');
+  let confirmText = $state('Hapus');
+  let confirmAction = $state<(() => Promise<void>) | null>(null);
 
   async function handleDelete(id: number): Promise<void> {
     confirmTitle = 'Hapus Transaksi';

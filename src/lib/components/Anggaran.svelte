@@ -2,6 +2,7 @@
   import { budgetUsageStore } from '../budget';
   import { budgetStore, categoryStore } from '../stores';
   import { toastStore } from '../stores/toast';
+  import ConfirmationDialog from './ConfirmationDialog.svelte';
 
   const usage = $derived($budgetUsageStore);
   const categories = $derived($categoryStore.data.filter(c => c.tipe === 'expense'));
@@ -10,6 +11,12 @@
   let formCategoryId = $state<number>(0);
   let formLimit = $state<string>('');
   let editingId = $state<number | undefined>();
+
+  let showConfirm = $state(false);
+  let confirmTitle = $state('');
+  let confirmMessage = $state('');
+  let confirmText = $state('Hapus');
+  let confirmAction = $state<(() => Promise<void>) | undefined>(undefined);
 
   function formatRupiah(amount: number): string {
     return new Intl.NumberFormat('id-ID', {
@@ -75,14 +82,18 @@
 
   async function deleteBudget(id?: number) {
     if (!id) return;
-    if (confirm('Hapus anggaran ini?')) {
+    confirmTitle = 'Hapus Anggaran';
+    confirmMessage = 'Hapus anggaran ini? Limit akan hilang namun pengeluaran tetap tercatat.';
+    confirmText = 'Hapus';
+    confirmAction = async () => {
       try {
         await budgetStore.deleteBudget(id);
         toastStore.success('Anggaran dihapus');
       } catch (e: any) {
         toastStore.error(e.message || 'Gagal menghapus anggaran');
       }
-    }
+    };
+    showConfirm = true;
   }
 </script>
 
@@ -90,7 +101,7 @@
   <header class="flex flex-col md:flex-row md:items-end justify-between gap-4">
     <div>
       <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">Anggaran Bulan Ini</h2>
-      <p class="font-body-md text-body-md text-on-surface-variant">Kendalikan pengeluaran dengan limit kategori.</p>
+      <p class="font-body-md text-body-md text-on-surface-variant">Kelola pengeluaran Anda dengan bijak.</p>
     </div>
     <button type="button" onclick={openCreate} class="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 font-label-md text-label-md text-on-primary hover:bg-surface-tint transition-colors"><span class="material-symbols-outlined text-[18px]">add</span>Atur Anggaran</button>
   </header>
@@ -99,71 +110,67 @@
     <p class="rounded-xl bg-surface-container-lowest p-8 text-center text-on-surface-variant border border-outline-variant">Memuat anggaran...</p>
   {:else}
     <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 relative overflow-hidden">
-      <p class="font-label-sm text-label-sm text-on-surface-variant tracking-wide uppercase">Sisa Anggaran Total</p>
-      <h2 class="font-display-lg text-display-lg mt-3 text-primary tracking-tight text-[32px] md:text-display-lg">{formatRupiah(usage.totalRemaining)}</h2>
-      
-      <div class="mt-4 pt-4 border-t border-outline-variant flex justify-between items-center flex-wrap gap-4">
-        <div>
-          <p class="font-label-sm text-label-sm text-on-surface-variant uppercase">Terpakai</p>
-          <p class="font-label-md text-label-md font-bold text-on-surface mt-1">{formatRupiah(usage.totalSpent)} <span class="text-on-surface-variant font-normal text-xs">dari {formatRupiah(usage.totalLimit)}</span></p>
+      <div class="flex flex-col md:flex-row justify-between md:items-end gap-stack-lg">
+        <div class="flex-1">
+          <p class="font-label-sm text-label-sm text-on-surface-variant mb-1">Sisa Anggaran</p>
+          <h2 class="font-display-lg text-display-lg text-primary">{formatRupiah(usage.totalRemaining)}</h2>
+          <p class="font-body-md text-body-md text-on-surface-variant mt-2">dari total {formatRupiah(usage.totalLimit)}</p>
         </div>
-        <div class="text-right">
-          <p class="font-label-sm text-label-sm text-on-surface-variant uppercase">Rekomendasi Harian</p>
-          <p class="font-label-md text-label-md font-bold text-secondary mt-1">{formatRupiah(usage.globalSafeDaily)} <span class="text-on-surface-variant font-normal text-xs">/ hari</span></p>
+        <div class="w-full md:w-1/3">
+          <div class="flex justify-between font-label-sm text-label-sm mb-2">
+            <span class="text-on-surface-variant">Terpakai {usage.totalLimit > 0 ? ((usage.totalSpent / usage.totalLimit) * 100).toFixed(0) : 0}%</span>
+            <span class="text-primary font-bold">{usage.totalLimit > 0 && usage.totalSpent <= usage.totalLimit ? 'Aman' : 'Melebihi Limit'}</span>
+          </div>
+          <div class="h-3 w-full bg-surface-variant rounded-full overflow-hidden">
+            <div class="h-full {usage.totalSpent > usage.totalLimit ? 'bg-error' : 'bg-secondary'} rounded-full" style="width: {usage.totalLimit > 0 ? Math.min((usage.totalSpent / usage.totalLimit) * 100, 100) : 0}%"></div>
+          </div>
         </div>
       </div>
     </div>
 
     {#if usage.usages.length === 0}
-      <div class="rounded-xl border-2 border-dashed border-outline-variant bg-surface-container-lowest p-10 text-center text-on-surface-variant">
+      <div class="bg-surface-container-lowest border border-dashed border-outline-variant rounded-xl p-10 flex flex-col items-center justify-center gap-2 hover:bg-surface-container-high transition-colors min-h-[140px] text-center">
         <p class="font-bold mb-2">Belum ada anggaran bulan ini</p>
-        <p class="font-label-sm text-label-sm mb-4">Mulai atur limit pengeluaran untuk kategori seperti Makanan atau Transportasi.</p>
+        <p class="font-label-sm text-label-sm mb-4 text-on-surface-variant">Mulai atur limit pengeluaran untuk kategori seperti Makanan atau Transportasi.</p>
         <button type="button" onclick={openCreate} class="rounded-lg bg-surface-container px-4 py-2 font-label-md text-label-md font-bold text-on-surface hover:bg-surface-container-high transition-colors">Buat Anggaran</button>
       </div>
     {:else}
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+      <h3 class="font-headline-md text-headline-md text-primary mb-4 mt-6">Rincian Kategori</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
         {#each usage.usages as item (item.id)}
-          <article class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5">
-            <div class="flex justify-between items-start mb-3">
+          <div class="bg-surface-container-lowest border {item.status === 'danger' ? 'border-error/30' : 'border-outline-variant'} rounded-xl p-4 flex flex-col gap-4 relative overflow-hidden group">
+            {#if item.status === 'danger'}
+               <div class="absolute top-0 right-0 w-16 h-16 bg-error/5 rounded-bl-full -z-10"></div>
+            {/if}
+            <div class="flex justify-between items-start">
               <div class="flex items-center gap-3">
-                <span class="w-4 h-4 rounded-full" style="background-color: {item.categoryColor}"></span>
-                <h3 class="font-label-md text-label-md font-bold text-on-surface">{item.categoryName}</h3>
+                <div class="p-2 {item.status === 'danger' ? 'bg-error-container/50 text-error' : 'bg-surface-container-low text-primary'} rounded-lg">
+                  <span class="material-symbols-outlined">category</span>
+                </div>
+                <div>
+                  <h4 class="font-label-md text-label-md text-primary">{item.categoryName}</h4>
+                  <p class="font-label-sm text-label-sm {item.status === 'danger' ? 'text-error' : 'text-on-surface-variant'}">{formatRupiah(item.spent)} / {formatRupiah(item.limit_nominal)}</p>
+                </div>
               </div>
-              <div class="flex items-center gap-2">
-                <button type="button" onclick={() => openEdit(item)} class="font-label-sm text-label-sm font-bold text-primary hover:bg-primary/10 px-2 py-1 rounded transition-colors">Edit</button>
-                <button type="button" onclick={() => deleteBudget(item.id)} class="font-label-sm text-label-sm font-bold text-error hover:bg-error/10 px-2 py-1 rounded transition-colors">Hapus</button>
-              </div>
+              <span class="font-label-sm text-label-sm {item.status === 'danger' ? 'text-on-error bg-error' : item.status === 'warning' ? 'text-secondary bg-secondary-container/20' : 'text-on-surface-variant bg-surface-variant/50'} px-2 py-1 rounded-md">{item.percentage.toFixed(0)}%</span>
+            </div>
+            
+            <div class="flex gap-2 justify-end mb-1">
+              <button type="button" onclick={() => openEdit(item)} class="text-xs text-primary hover:underline">Edit</button>
+              <button type="button" onclick={() => deleteBudget(item.id)} class="text-xs text-error hover:underline">Hapus</button>
             </div>
 
-            <div class="mb-2 flex justify-between font-label-md text-label-md">
-              <span class="font-bold {item.status === 'danger' ? 'text-error' : item.status === 'warning' ? 'text-orange' : 'text-on-surface'}">
-                {formatRupiah(item.spent)}
-              </span>
-              <span class="text-on-surface-variant font-medium">Limit: {formatRupiah(item.limit_nominal)}</span>
+            <div class="h-2 w-full bg-surface-variant rounded-full overflow-hidden mt-auto">
+              <div class="h-full {item.status === 'danger' ? 'bg-error' : item.status === 'warning' ? 'bg-secondary' : 'bg-primary-container'} rounded-full" style="width: {Math.min(item.percentage, 100)}%"></div>
             </div>
-
-            <div class="w-full bg-surface-container-high rounded-full h-2.5 overflow-hidden">
-              <div
-                class="h-2.5 rounded-full transition-all {item.status === 'danger' ? 'bg-error' : item.status === 'warning' ? 'bg-orange' : 'bg-secondary'}"
-                style="width: {item.percentage}%"
-              ></div>
-            </div>
-
-            <div class="mt-3 flex justify-between items-center font-label-sm text-label-sm">
-              {#if item.status === 'danger'}
-                <span class="font-bold text-error bg-error/10 px-2 py-1 rounded-full">Melebihi limit!</span>
-              {:else if item.status === 'warning'}
-                <span class="font-bold text-orange bg-orange/10 px-2 py-1 rounded-full">Mendekati limit</span>
-              {:else}
-                <span class="font-bold text-secondary bg-secondary/10 px-2 py-1 rounded-full">Aman</span>
-              {/if}
-
-              {#if item.remaining > 0}
-                <span class="text-on-surface-variant font-medium">Sisa: <span class="font-bold">{formatRupiah(item.safeDaily)}</span> /hari</span>
-              {/if}
-            </div>
-          </article>
+          </div>
         {/each}
+        
+        <!-- Add New Category Button -->
+        <button onclick={openCreate} class="bg-surface-container-low border border-dashed border-outline-variant rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:bg-surface-container-high transition-colors min-h-[140px]">
+          <span class="material-symbols-outlined text-on-surface-variant">add_circle</span>
+          <span class="font-label-md text-label-md text-on-surface-variant">Tambah Anggaran</span>
+        </button>
       </div>
     {/if}
   {/if}
@@ -194,3 +201,12 @@
     </div>
   </div>
 {/if}
+
+<ConfirmationDialog 
+  bind:show={showConfirm}
+  title={confirmTitle}
+  message={confirmMessage}
+  confirmText={confirmText}
+  isDestructive={true}
+  onConfirm={confirmAction}
+/>
