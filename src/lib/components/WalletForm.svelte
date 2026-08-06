@@ -71,27 +71,25 @@
 </script>
 
 <div
-  class="fixed inset-0 bg-primary-dark/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+  class="fixed inset-0 bg-inverse-surface/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
   onclick={handleBackdropClick}
   onkeydown={handleBackdropKeydown}
   role="presentation"
 >
   <div
-    class="bg-surface-card rounded-xl shadow-xl w-full max-w-sm relative overflow-hidden transform transition-all"
+    class="bg-surface-container-lowest rounded-xl border border-outline-variant w-full max-w-sm relative overflow-hidden"
     role="dialog"
     aria-modal="true"
     aria-labelledby="wallet-form-title"
   >
-    <div class="h-2 bg-gradient-to-r from-primary to-accent w-full"></div>
-
     <form class="p-6" onsubmit={(event) => { event.preventDefault(); void handleSubmit(); }}>
-      <h2 id="wallet-form-title" class="text-2xl font-extrabold text-primary-dark mb-6">
+      <h2 id="wallet-form-title" class="font-headline-md text-headline-md text-on-surface mb-6">
         {editId !== null ? 'Edit Dompet' : 'Tambah Dompet'}
       </h2>
 
       <div class="space-y-5">
         <div>
-          <label for="wallet-name" class="block text-sm font-bold text-text-secondary mb-2 uppercase tracking-wide">Nama Dompet</label>
+          <label for="wallet-name" class="block font-label-sm text-label-sm text-on-surface-variant mb-2">Nama Dompet</label>
           <input
             id="wallet-name"
             name="wallet-name"
@@ -100,13 +98,13 @@
             autocomplete="off"
             required
             placeholder="Contoh: Tunai, BCA, GoPay"
-            class="w-full px-4 py-3 bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors border-2 border-transparent rounded-lg focus:border-accent focus:bg-surface-card focus:shadow-focus transition-all text-text-primary font-bold placeholder:text-gray-400 placeholder:font-medium"
+            class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-lg outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-surface-container-high text-on-surface font-medium placeholder:text-on-surface-variant placeholder:font-normal"
           />
         </div>
 
         {#if editId === null || !adjustSaldo}
           <div>
-            <label for="wallet-initial-balance" class="block text-sm font-bold text-text-secondary mb-2 uppercase tracking-wide">Saldo Awal (Rp)</label>
+            <label for="wallet-initial-balance" class="block font-label-sm text-label-sm text-on-surface-variant mb-2">Saldo Awal (Rp)</label>
             <input
               id="wallet-initial-balance"
               name="wallet-initial-balance"
@@ -114,23 +112,23 @@
               bind:value={saldo_awal}
               step="1000"
               placeholder="0"
-              class="w-full px-4 py-3 bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors border-2 border-transparent rounded-lg focus:border-accent focus:bg-surface-card focus:shadow-focus transition-all text-text-primary font-bold"
+              class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-lg outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-surface-container-high text-on-surface font-medium"
             />
           </div>
         {/if}
 
         {#if editId !== null}
-          <div class="flex items-start gap-3 p-3 bg-primary-bg/50 border border-primary-light/30 rounded-xl">
+          <div class="flex items-start gap-3 p-3 bg-surface-container-low border border-surface-variant rounded-lg">
             <input
               id="wallet-adjust-balance"
               name="wallet-adjust-balance"
               type="checkbox"
               bind:checked={adjustSaldo}
-              class="mt-1 w-4 h-4 text-primary accent-primary rounded border-gray-300"
+              class="mt-1 w-4 h-4 accent-primary rounded border-outline-variant"
             />
             <div>
-              <label for="wallet-adjust-balance" class="text-sm font-bold text-primary-dark">Sesuaikan Saldo Saat Ini</label>
-              <p id="wallet-adjust-description" class="text-xs font-medium text-primary-dark/70 mt-0.5">
+              <label for="wallet-adjust-balance" class="font-label-md text-label-md font-bold text-on-surface">Sesuaikan Saldo Saat Ini</label>
+              <p id="wallet-adjust-description" class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">
                 Sistem akan membuat transaksi penyesuaian otomatis agar saldo akhir sesuai.
               </p>
             </div>
@@ -138,7 +136,7 @@
 
           {#if adjustSaldo}
             <div>
-              <label for="wallet-current-balance" class="block text-sm font-bold text-text-secondary mb-2 uppercase tracking-wide">Saldo Baru (Rp)</label>
+              <label for="wallet-current-balance" class="block font-label-sm text-label-sm text-on-surface-variant mb-2">Saldo Baru (Rp)</label>
               <input
                 id="wallet-current-balance"
                 name="wallet-current-balance"
@@ -146,9 +144,9 @@
                 bind:value={newCurrentSaldo}
                 step="1000"
                 aria-describedby="wallet-recorded-balance"
-                class="w-full px-4 py-3 bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors border-2 border-transparent rounded-lg focus:border-accent focus:bg-surface-card focus:shadow-focus transition-all text-text-primary font-bold"
+                class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-lg outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-surface-container-high text-on-surface font-medium"
               />
-              <p id="wallet-recorded-balance" class="text-xs text-text-muted mt-2 font-bold text-right">
+              <p id="wallet-recorded-balance" class="font-label-sm text-label-sm text-on-surface-variant mt-2 text-right">
                 Saldo tercatat: Rp {currentSaldoOriginal.toLocaleString('id-ID')}
               </p>
             </div>
@@ -161,14 +159,14 @@
           type="button"
           onclick={() => oncancel?.()}
           disabled={submitting}
-          class="flex-1 px-4 py-3 bg-gray-100 rounded-lg text-text-secondary font-bold hover:bg-gray-200 transition-colors disabled:opacity-50"
+          class="flex-1 px-4 py-3 bg-surface-container text-on-surface rounded-lg font-medium hover:bg-surface-container-high transition-colors disabled:opacity-50"
         >
           Batal
         </button>
         <button
           type="submit"
           disabled={submitting}
-          class="flex-[2] bg-gradient-to-r from-primary to-primary-light text-white dark:text-primary-bg px-6 py-3 rounded-lg shadow-sm hover:scale-[0.98] transition-transform font-extrabold text-lg disabled:opacity-50"
+          class="flex-[2] bg-primary text-on-primary font-label-md text-label-md px-6 py-3 rounded-lg hover:bg-surface-tint transition-colors disabled:opacity-50"
         >
           {submitting ? 'Menyimpan…' : editId !== null ? 'Simpan' : 'Tambah'}
         </button>

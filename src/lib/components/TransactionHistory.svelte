@@ -54,34 +54,34 @@
   }
 </script>
 
-<section class="bg-surface-card rounded-xl shadow-md overflow-hidden" aria-labelledby="transaction-history-title">
-  <div class="p-4 border-b border-gray-200">
-    <h2 id="transaction-history-title" class="font-semibold text-gray-800">Riwayat Transaksi</h2>
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden" aria-labelledby="transaction-history-title">
+  <div class="p-4 border-b border-outline-variant">
+    <h2 id="transaction-history-title" class="font-headline-md text-headline-md text-on-background">Riwayat Transaksi</h2>
   </div>
 
   {#if $transactionStore.loading}
-    <p class="p-8 text-center text-gray-500" aria-live="polite">Memuat transaksi…</p>
+    <p class="p-8 text-center text-on-surface-variant" aria-live="polite">Memuat transaksi…</p>
   {:else if $transactionStore.error}
-    <p class="p-4 text-coral-dark bg-red-50" role="alert">Gagal memuat transaksi: {$transactionStore.error}</p>
+    <p class="p-4 text-on-error-container bg-error/10" role="alert">Gagal memuat transaksi: {$transactionStore.error}</p>
   {:else if $transactionStore.data.length === 0}
     <div class="p-8 text-center">
-      <p class="text-gray-500">Belum ada transaksi</p>
+      <p class="text-on-surface-variant">Belum ada transaksi</p>
     </div>
   {:else}
     <div class="hidden lg:block">
       <table class="w-full text-left text-sm">
-        <tbody class="divide-y divide-border">
+        <tbody class="divide-y divide-outline-variant">
           {#each $transactionStore.data as transaction (transaction.id)}
-            <tr class="hover:bg-gray-50 transition-colors">
+            <tr class="hover:bg-surface-bright transition-colors">
               <td class="p-4 w-1/2">
-                <p class="font-bold text-text-primary truncate">{transaction.catatan || 'Tanpa catatan'}</p>
-                <p class="text-xs text-text-secondary mt-1">{formatDate(transaction.tanggal)} • {formatTime(transaction.tanggal)}</p>
+                <p class="font-bold text-on-surface truncate">{transaction.catatan || 'Tanpa catatan'}</p>
+                <p class="font-label-sm text-label-sm text-on-surface-variant mt-1">{formatDate(transaction.tanggal)} • {formatTime(transaction.tanggal)}</p>
               </td>
               <td class="p-4 text-right">
-                <p class="{transaction.tipe === 'income' ? 'text-success' : transaction.tipe === 'expense' ? 'text-danger' : 'text-primary'} font-bold">
+                <p class="{transaction.tipe === 'income' ? 'text-secondary' : transaction.tipe === 'expense' ? 'text-error' : 'text-primary'} font-bold">
                   {transaction.tipe === 'income' ? '+' : transaction.tipe === 'expense' ? '-' : ''}{formatRupiah(transaction.nominal)}
                 </p>
-                <p class="text-xs text-text-secondary mt-1">{transactionType(transaction.tipe)}</p>
+                <p class="font-label-sm text-label-sm text-on-surface-variant mt-1">{transactionType(transaction.tipe)}</p>
               </td>
               <td class="p-4 text-right w-20">
                 {#if transaction.id !== undefined}
@@ -89,7 +89,7 @@
                     type="button"
                     onclick={() => void handleDelete(transaction.id!)}
                     aria-label={`Hapus transaksi ${transaction.catatan || transactionType(transaction.tipe)}`}
-                    class="text-xs font-bold text-coral hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                    class="font-label-sm text-label-sm font-bold text-error hover:bg-error/10 px-2 py-1 rounded transition-colors"
                   >
                     Hapus
                   </button>
@@ -102,21 +102,21 @@
     </div>
 
     <!-- Mobile view -->
-    <div class="divide-y divide-gray-100 lg:hidden">
+    <div class="divide-y divide-outline-variant lg:hidden">
       {#each $transactionStore.data as transaction (transaction.id)}
-        <article class="p-4 hover:bg-gray-50 transition-colors">
+        <article class="p-4 hover:bg-surface-bright transition-colors">
           <div class="flex justify-between items-start gap-4">
             <div class="flex-1 min-w-0">
-              <p class="font-medium truncate">{transaction.catatan || 'Tanpa catatan'}</p>
-              <p class="text-xs text-gray-500 mt-1">
+              <p class="font-medium text-on-surface truncate">{transaction.catatan || 'Tanpa catatan'}</p>
+              <p class="font-label-sm text-label-sm text-on-surface-variant mt-1">
                 {formatDate(transaction.tanggal)} • {formatTime(transaction.tanggal)}
               </p>
             </div>
             <div class="text-right shrink-0">
-              <p class="{transaction.tipe === 'income' ? 'text-success' : transaction.tipe === 'expense' ? 'text-danger' : 'text-primary'} font-bold">
+              <p class="{transaction.tipe === 'income' ? 'text-secondary' : transaction.tipe === 'expense' ? 'text-error' : 'text-primary'} font-bold">
                 {transaction.tipe === 'income' ? '+' : transaction.tipe === 'expense' ? '-' : ''}{formatRupiah(transaction.nominal)}
               </p>
-              <p class="text-xs text-gray-500 mt-1">{transactionType(transaction.tipe)}</p>
+              <p class="font-label-sm text-label-sm text-on-surface-variant mt-1">{transactionType(transaction.tipe)}</p>
             </div>
           </div>
           {#if transaction.id !== undefined}
@@ -124,7 +124,7 @@
               type="button"
               onclick={() => void handleDelete(transaction.id!)}
               aria-label={`Hapus transaksi ${transaction.catatan || transactionType(transaction.tipe)}`}
-              class="mt-2 text-xs text-red-600 hover:text-red-700"
+              class="mt-2 font-label-sm text-label-sm text-error hover:underline"
             >
               Hapus
             </button>

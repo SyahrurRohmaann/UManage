@@ -87,79 +87,79 @@
 </script>
 
 <div class="space-y-6">
-  <header class="flex flex-wrap items-center justify-between gap-3">
+  <header class="flex flex-col md:flex-row md:items-end justify-between gap-4">
     <div>
-      <h2 class="text-xl font-extrabold text-text-primary">Anggaran Bulan Ini</h2>
-      <p class="text-sm text-text-muted">Kendalikan pengeluaran dengan limit kategori.</p>
+      <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">Anggaran Bulan Ini</h2>
+      <p class="font-body-md text-body-md text-on-surface-variant">Kendalikan pengeluaran dengan limit kategori.</p>
     </div>
-    <button type="button" onclick={openCreate} class="rounded-lg bg-primary px-5 py-2.5 font-bold text-white dark:text-primary-bg shadow-sm">Atur Anggaran</button>
+    <button type="button" onclick={openCreate} class="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 font-label-md text-label-md text-on-primary hover:bg-surface-tint transition-colors"><span class="material-symbols-outlined text-[18px]">add</span>Atur Anggaran</button>
   </header>
 
   {#if usage.loading}
-    <p class="rounded-xl bg-surface-card p-8 text-center text-text-muted">Memuat anggaran...</p>
+    <p class="rounded-xl bg-surface-container-lowest p-8 text-center text-on-surface-variant border border-outline-variant">Memuat anggaran...</p>
   {:else}
-    <div class="bg-surface-card border border-border rounded-xl shadow-sm p-6 relative overflow-hidden">
-      <p class="text-sm font-semibold text-text-secondary tracking-wide uppercase">Sisa Anggaran Total</p>
-      <h2 class="text-4xl font-extrabold mt-3 text-text-primary tracking-tight">{formatRupiah(usage.totalRemaining)}</h2>
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 relative overflow-hidden">
+      <p class="font-label-sm text-label-sm text-on-surface-variant tracking-wide uppercase">Sisa Anggaran Total</p>
+      <h2 class="font-display-lg text-display-lg mt-3 text-primary tracking-tight text-[32px] md:text-display-lg">{formatRupiah(usage.totalRemaining)}</h2>
       
-      <div class="mt-4 pt-4 border-t border-border flex justify-between items-center flex-wrap gap-4">
+      <div class="mt-4 pt-4 border-t border-outline-variant flex justify-between items-center flex-wrap gap-4">
         <div>
-          <p class="text-xs text-text-muted font-bold uppercase">Terpakai</p>
-          <p class="font-bold text-text-primary mt-1">{formatRupiah(usage.totalSpent)} <span class="text-text-muted font-normal text-xs">dari {formatRupiah(usage.totalLimit)}</span></p>
+          <p class="font-label-sm text-label-sm text-on-surface-variant uppercase">Terpakai</p>
+          <p class="font-label-md text-label-md font-bold text-on-surface mt-1">{formatRupiah(usage.totalSpent)} <span class="text-on-surface-variant font-normal text-xs">dari {formatRupiah(usage.totalLimit)}</span></p>
         </div>
         <div class="text-right">
-          <p class="text-xs text-text-muted font-bold uppercase">Rekomendasi Harian</p>
-          <p class="font-bold text-success mt-1">{formatRupiah(usage.globalSafeDaily)} <span class="text-text-muted font-normal text-xs">/ hari</span></p>
+          <p class="font-label-sm text-label-sm text-on-surface-variant uppercase">Rekomendasi Harian</p>
+          <p class="font-label-md text-label-md font-bold text-secondary mt-1">{formatRupiah(usage.globalSafeDaily)} <span class="text-on-surface-variant font-normal text-xs">/ hari</span></p>
         </div>
       </div>
     </div>
 
     {#if usage.usages.length === 0}
-      <div class="rounded-xl border-2 border-dashed border-gray-200 bg-surface-card p-10 text-center text-text-secondary">
+      <div class="rounded-xl border-2 border-dashed border-outline-variant bg-surface-container-lowest p-10 text-center text-on-surface-variant">
         <p class="font-bold mb-2">Belum ada anggaran bulan ini</p>
-        <p class="text-sm mb-4">Mulai atur limit pengeluaran untuk kategori seperti Makanan atau Transportasi.</p>
-        <button type="button" onclick={openCreate} class="rounded-lg bg-gray-100 px-4 py-2 font-bold text-text-primary">Buat Anggaran</button>
+        <p class="font-label-sm text-label-sm mb-4">Mulai atur limit pengeluaran untuk kategori seperti Makanan atau Transportasi.</p>
+        <button type="button" onclick={openCreate} class="rounded-lg bg-surface-container px-4 py-2 font-label-md text-label-md font-bold text-on-surface hover:bg-surface-container-high transition-colors">Buat Anggaran</button>
       </div>
     {:else}
-      <div class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
         {#each usage.usages as item (item.id)}
-          <article class="bg-surface-card border border-border rounded-xl p-5 shadow-sm">
+          <article class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5">
             <div class="flex justify-between items-start mb-3">
               <div class="flex items-center gap-3">
                 <span class="w-4 h-4 rounded-full" style="background-color: {item.categoryColor}"></span>
-                <h3 class="font-bold text-text-primary">{item.categoryName}</h3>
+                <h3 class="font-label-md text-label-md font-bold text-on-surface">{item.categoryName}</h3>
               </div>
               <div class="flex items-center gap-2">
-                <button type="button" onclick={() => openEdit(item)} class="text-xs font-bold text-primary hover:bg-primary-bg px-2 py-1 rounded">Edit</button>
-                <button type="button" onclick={() => deleteBudget(item.id)} class="text-xs font-bold text-coral hover:bg-red-50 px-2 py-1 rounded">Hapus</button>
+                <button type="button" onclick={() => openEdit(item)} class="font-label-sm text-label-sm font-bold text-primary hover:bg-primary/10 px-2 py-1 rounded transition-colors">Edit</button>
+                <button type="button" onclick={() => deleteBudget(item.id)} class="font-label-sm text-label-sm font-bold text-error hover:bg-error/10 px-2 py-1 rounded transition-colors">Hapus</button>
               </div>
             </div>
-            
-            <div class="mb-2 flex justify-between text-sm">
-              <span class="font-bold {item.status === 'danger' ? 'text-coral' : item.status === 'warning' ? 'text-orange-600' : 'text-text-primary'}">
+
+            <div class="mb-2 flex justify-between font-label-md text-label-md">
+              <span class="font-bold {item.status === 'danger' ? 'text-error' : item.status === 'warning' ? 'text-orange' : 'text-on-surface'}">
                 {formatRupiah(item.spent)}
               </span>
-              <span class="text-text-muted font-medium">Limit: {formatRupiah(item.limit_nominal)}</span>
+              <span class="text-on-surface-variant font-medium">Limit: {formatRupiah(item.limit_nominal)}</span>
             </div>
-            
-            <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-              <div 
-                class="h-2.5 rounded-full transition-all {item.status === 'danger' ? 'bg-coral' : item.status === 'warning' ? 'bg-orange-500' : 'bg-success'}" 
+
+            <div class="w-full bg-surface-container-high rounded-full h-2.5 overflow-hidden">
+              <div
+                class="h-2.5 rounded-full transition-all {item.status === 'danger' ? 'bg-error' : item.status === 'warning' ? 'bg-orange' : 'bg-secondary'}"
                 style="width: {item.percentage}%"
               ></div>
             </div>
-            
-            <div class="mt-3 flex justify-between items-center text-xs">
+
+            <div class="mt-3 flex justify-between items-center font-label-sm text-label-sm">
               {#if item.status === 'danger'}
-                <span class="font-bold text-coral bg-red-50 px-2 py-1 rounded">Melebihi limit!</span>
+                <span class="font-bold text-error bg-error/10 px-2 py-1 rounded-full">Melebihi limit!</span>
               {:else if item.status === 'warning'}
-                <span class="font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded">Mendekati limit</span>
+                <span class="font-bold text-orange bg-orange/10 px-2 py-1 rounded-full">Mendekati limit</span>
               {:else}
-                <span class="font-bold text-success bg-success-bg px-2 py-1 rounded">Aman</span>
+                <span class="font-bold text-secondary bg-secondary/10 px-2 py-1 rounded-full">Aman</span>
               {/if}
-              
+
               {#if item.remaining > 0}
-                <span class="text-text-secondary font-medium">Sisa: <span class="font-bold">{formatRupiah(item.safeDaily)}</span> /hari</span>
+                <span class="text-on-surface-variant font-medium">Sisa: <span class="font-bold">{formatRupiah(item.safeDaily)}</span> /hari</span>
               {/if}
             </div>
           </article>
@@ -170,25 +170,25 @@
 </div>
 
 {#if showForm}
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-primary-dark/50 p-4" role="presentation">
-    <div role="dialog" aria-modal="true" class="w-full max-w-sm rounded-xl bg-surface-card p-6 shadow-xl">
-      <h3 class="text-xl font-extrabold text-primary-dark">{editingId ? 'Edit Anggaran' : 'Atur Anggaran Baru'}</h3>
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-inverse-surface/50 p-4" role="presentation">
+    <div role="dialog" aria-modal="true" class="w-full max-w-sm rounded-xl bg-surface-container-lowest border border-outline-variant p-6">
+      <h3 class="font-headline-md text-headline-md text-on-surface">{editingId ? 'Edit Anggaran' : 'Atur Anggaran Baru'}</h3>
       <form class="mt-5 space-y-4" onsubmit={(e) => { e.preventDefault(); saveBudget(); }}>
-        <label class="block text-sm font-bold text-text-secondary">Kategori Pengeluaran
-          <select required bind:value={formCategoryId} class="mt-1 w-full rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors px-4 py-3">
+        <label class="block font-label-sm text-label-sm text-on-surface-variant">Kategori Pengeluaran
+          <select required bind:value={formCategoryId} class="mt-1 w-full rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all px-4 py-3">
             <option value={0} disabled>Pilih kategori</option>
             {#each categories as category (category.id)}
               <option value={category.id}>{category.nama}</option>
             {/each}
           </select>
         </label>
-        <label class="block text-sm font-bold text-text-secondary">Limit Bulanan (Rp)
-          <input required type="number" min="1" step="1" bind:value={formLimit} class="mt-1 w-full rounded-lg bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors px-4 py-3 font-bold" />
+        <label class="block font-label-sm text-label-sm text-on-surface-variant">Limit Bulanan (Rp)
+          <input required type="number" min="1" step="1" bind:value={formLimit} class="mt-1 w-full rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all px-4 py-3 font-label-md text-label-md font-bold text-on-surface" />
         </label>
-        
+
         <div class="flex gap-3 pt-4">
-          <button type="button" onclick={() => showForm = false} class="flex-1 rounded-lg bg-gray-100 px-4 py-3 font-bold">Batal</button>
-          <button type="submit" class="flex-1 rounded-lg bg-primary px-4 py-3 font-bold text-white dark:text-primary-bg">Simpan</button>
+          <button type="button" onclick={() => showForm = false} class="flex-1 rounded-lg bg-surface-container px-4 py-3 font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors">Batal</button>
+          <button type="submit" class="flex-1 rounded-lg bg-primary px-4 py-3 font-label-md text-label-md text-on-primary hover:bg-surface-tint transition-colors">Simpan</button>
         </div>
       </form>
     </div>

@@ -5,6 +5,37 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Material-role tokens from the Stitch "Zen Ledger Finance" design
+        // (mapped to our existing CSS variables so dark mode keeps working).
+        background: 'var(--color-surface-base)',
+        'on-background': 'var(--color-text-primary)',
+        surface: 'var(--color-surface-base)',
+        'surface-dim': 'var(--color-surface-dim)',
+        'surface-bright': 'var(--color-surface-bright)',
+        'surface-container-lowest': 'var(--color-surface-container-lowest)',
+        'surface-container-low': 'var(--color-surface-container-low)',
+        'surface-container': 'var(--color-surface-container)',
+        'surface-container-high': 'var(--color-surface-container-high)',
+        'surface-container-highest': 'var(--color-surface-container-highest)',
+        'on-surface': 'var(--color-on-surface)',
+        'on-surface-variant': 'var(--color-on-surface-variant)',
+        outline: 'var(--color-outline)',
+        'outline-variant': 'var(--color-outline-variant)',
+        'surface-variant': 'var(--color-surface-variant)',
+        'on-primary': 'var(--color-on-primary)',
+        'primary-container': 'var(--color-primary-container)',
+        'on-primary-container': 'var(--color-on-primary-container)',
+        'primary-fixed': 'var(--color-primary-fixed)',
+        'primary-fixed-dim': 'var(--color-primary-fixed-dim)',
+        secondary: 'var(--color-secondary)',
+        'on-secondary': 'var(--color-on-secondary)',
+        'secondary-container': 'var(--color-secondary-container)',
+        'on-secondary-container': 'var(--color-on-secondary-container)',
+        error: 'var(--color-error)',
+        'on-error': 'var(--color-on-error)',
+        'error-container': 'var(--color-error-container)',
+        'on-error-container': 'var(--color-on-error-container)',
+        orange: 'var(--color-orange)',
         // Keep established token names while using Uwangg's finance palette.
         primary: {
           DEFAULT: 'var(--color-primary)',
@@ -58,6 +89,16 @@ export default {
       fontFamily: {
         sans: ['Geist', 'sans-serif'],
       },
+      fontSize: {
+        'display-lg': ['48px', { lineHeight: '56px', letterSpacing: '-0.02em', fontWeight: '600' }],
+        'headline-lg': ['32px', { lineHeight: '40px', letterSpacing: '-0.02em', fontWeight: '600' }],
+        'headline-lg-mobile': ['24px', { lineHeight: '32px', letterSpacing: '-0.01em', fontWeight: '600' }],
+        'headline-md': ['20px', { lineHeight: '28px', letterSpacing: '-0.01em', fontWeight: '500' }],
+        'body-lg': ['18px', { lineHeight: '28px', letterSpacing: '0', fontWeight: '400' }],
+        'body-md': ['16px', { lineHeight: '24px', letterSpacing: '0', fontWeight: '400' }],
+        'label-md': ['14px', { lineHeight: '20px', letterSpacing: '0.02em', fontWeight: '500' }],
+        'label-sm': ['12px', { lineHeight: '16px', letterSpacing: '0.05em', fontWeight: '600' }],
+      },
       boxShadow: {
         sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
         md: '0 4px 6px -1px rgb(0 0 0 / 0.10), 0 2px 4px -2px rgb(0 0 0 / 0.10)',
@@ -85,6 +126,12 @@ export default {
         md: '16px',
         lg: '24px',
         xl: '32px',
+        'stack-sm': '4px',
+        'stack-md': '12px',
+        'stack-lg': '24px',
+        gutter: '16px',
+        'container-padding-mobile': '16px',
+        'container-padding-desktop': '32px',
       },
     },
   },
