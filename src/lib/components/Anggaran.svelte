@@ -3,6 +3,7 @@
   import { budgetStore, categoryStore } from '../stores';
   import { toastStore } from '../stores/toast';
   import ConfirmationDialog from './ConfirmationDialog.svelte';
+  import { formatRupiahInput, parseRupiahInput } from '../utils';
 
   const usage = $derived($budgetUsageStore);
   const categories = $derived($categoryStore.data.filter(c => c.tipe === 'expense'));
@@ -41,7 +42,7 @@
   }
 
   async function saveBudget() {
-    const limit = Number(formLimit);
+    const limit = parseRupiahInput(formLimit);
     if (!limit || limit <= 0) {
       toastStore.error('Nominal limit tidak valid');
       return;
@@ -190,7 +191,7 @@
           </select>
         </label>
         <label class="block font-label-sm text-label-sm text-on-surface-variant">Limit Bulanan (Rp)
-          <input required type="number" min="1" step="1" bind:value={formLimit} class="mt-1 w-full rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all px-4 py-3 font-label-md text-label-md font-bold text-on-surface" />
+          <input required type="text" inputmode="numeric" value={formatRupiahInput(formLimit)} oninput={(e) => { const raw = e.currentTarget.value.replace(/\D/g, ''); formLimit = raw; e.currentTarget.value = formatRupiahInput(raw); }} class="mt-1 w-full rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all px-4 py-3 font-label-md text-label-md font-bold text-on-surface" />
         </label>
 
         <div class="flex gap-3 pt-4">

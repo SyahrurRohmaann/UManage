@@ -4,6 +4,7 @@
   import type { Contact } from '../db';
   import { toastStore } from '../stores/toast';
   import ConfirmationDialog from './ConfirmationDialog.svelte';
+  import { formatRupiahInput, parseRupiahInput } from '../utils';
 
   const patunganState = patunganStore;
   const contactState = contactStore;
@@ -90,7 +91,7 @@
   }
 
   function getTotal() {
-    return items.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+    return items.reduce((sum, item) => sum + (parseRupiahInput(item.price.toString()) || 0), 0);
   }
 
   function getTotalPercent() {
@@ -104,7 +105,7 @@
     if (items.length === 0 || items.some((item) => !item.name.trim())) {
       toastStore.error('Nama setiap item harus diisi!'); return;
     }
-    if (items.some((item) => !Number.isFinite(Number(item.price)) || Number(item.price) <= 0)) {
+    if (items.some((item) => !Number.isFinite(parseRupiahInput(item.price.toString())) || parseRupiahInput(item.price.toString()) <= 0)) {
       toastStore.error('Harga setiap item harus lebih dari nol!'); return;
     }
     if (participants.length < 2) {
@@ -142,7 +143,7 @@
 
       await patunganStore.createPatungan({
         session: { nama_sesi: sessionName.trim(), tanggal: toTimestamp(sessionDate) },
-        items: items.map((item) => ({ nama_item: item.name.trim(), harga: Number(item.price) })),
+        items: items.map((item) => ({ nama_item: item.name.trim(), harga: parseRupiahInput(item.price.toString()) })),
         participants: preparedParticipants,
         generatedDebts: autoPiutang
           ? preparedParticipants.flatMap((participant, index) => participant.is_talangan || participant.contact_id === undefined || participant.persen <= 0
@@ -430,7 +431,7 @@
                 {#each items as item, i (item.id)}
                   <div class="flex gap-2">
                     <input type="text" bind:value={item.name} placeholder="Nama item" class="flex-[2] px-3 py-2 bg-background border border-outline-variant rounded-md text-sm font-bold focus:border-primary outline-none text-on-surface"/>
-                    <input type="number" bind:value={item.price} placeholder="Harga" class="flex-[2] px-3 py-2 bg-background border border-outline-variant rounded-md text-sm font-bold focus:border-primary outline-none text-on-surface"/>
+                    <input type="text" inputmode="numeric" value={formatRupiahInput(item.price.toString())} oninput={(e) => { const raw = e.currentTarget.value.replace(/\D/g, ''); item.price = raw; e.currentTarget.value = formatRupiahInput(raw); }} placeholder="Harga" class="flex-[2] px-3 py-2 bg-background border border-outline-variant rounded-md text-sm font-bold focus:border-primary outline-none text-on-surface"/>
                     <button onclick={() => removeItem(item.id)} class="flex-none px-2 text-error hover:text-error/80 font-bold material-symbols-outlined text-[20px]">close</button>
                   </div>
                 {/each}
