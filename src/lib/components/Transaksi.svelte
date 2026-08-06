@@ -24,13 +24,15 @@
   let filterDateTo = $state('');
 
   let transactionType = $state<'income' | 'expense' | 'transfer'>('expense');
-  let transactionAmount = $state('');
+  let transactionAmounts = $state(['']);
   let transactionDate = $state(today());
   let transactionWalletId = $state(0);
   let transferDestinationWalletId = $state(0);
   let transactionCategoryId = $state(0);
   let transactionNote = $state('');
   let transactionTag = $state('');
+
+  let totalTransactionAmount = $derived(transactionAmounts.reduce((sum, val) => sum + (Number(val) || 0), 0));
 
   let categoryName = $state('');
   let categoryType = $state<'income' | 'expense'>('expense');
@@ -76,7 +78,7 @@
   function openCreateTransaction(): void {
     editingTransactionId = undefined;
     transactionType = 'expense';
-    transactionAmount = '';
+    transactionAmounts = [''];
     transactionDate = today();
     transactionWalletId = wallets[0]?.id ?? 0;
     transferDestinationWalletId = wallets[1]?.id ?? 0;
@@ -90,7 +92,7 @@
     if (transaction.id === undefined || transaction.tipe === 'transfer') return;
     editingTransactionId = transaction.id;
     transactionType = transaction.tipe;
-    transactionAmount = String(transaction.nominal);
+    transactionAmounts = [String(transaction.nominal)];
     transactionDate = new Date(transaction.tanggal).toISOString().slice(0, 10);
     transactionWalletId = transaction.wallet_id;
     transactionCategoryId = transaction.category_id ?? 0;
@@ -100,7 +102,7 @@
   }
 
   async function saveTransaction(): Promise<void> {
-    const amount = Number(transactionAmount);
+    const amount = Number(totalTransactionAmount);
     if (!Number.isFinite(amount) || amount <= 0) {
       toastStore.error('Masukkan nominal yang valid.');
       return;
@@ -367,7 +369,50 @@
       <h3 id="transaction-form-title" class="font-headline-md text-headline-md text-on-surface">{editingTransactionId === undefined ? 'Tambah transaksi' : 'Edit transaksi'}</h3>
       <form class="mt-5 space-y-4" onsubmit={(event) => { event.preventDefault(); void saveTransaction(); }}>
         <fieldset><legend class="mb-2 font-label-sm text-label-sm text-on-surface-variant">Tipe transaksi</legend><div class="grid grid-cols-3 gap-2"><label class="rounded-lg bg-surface-container-lowest border border-outline-variant p-3 font-label-md text-label-md text-on-surface cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-colors"><input type="radio" bind:group={transactionType} value="income" class="accent-primary" /> Pemasukan</label><label class="rounded-lg bg-surface-container-lowest border border-outline-variant p-3 font-label-md text-label-md text-on-surface cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-colors"><input type="radio" bind:group={transactionType} value="expense" class="accent-primary" /> Pengeluaran</label><label class="rounded-lg bg-surface-container-lowest border border-outline-variant p-3 font-label-md text-label-md text-on-surface cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-colors"><input type="radio" bind:group={transactionType} value="transfer" disabled={editingTransactionId !== undefined} class="accent-primary" /> Transfer</label></div></fieldset>
-        <label class="block font-label-sm text-label-sm text-on-surface-variant">Nominal (Rp)<input required type="number" min="1" step="1" bind:value={transactionAmount} class="mt-1 w-full rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all px-4 py-3 font-headline-md text-headline-md text-on-surface" /></label>
+        <div>
+          <!-- svelte-ignore a11y_label_has_associated_control -->
+          <label class="block font-label-sm text-label-sm text-on-surface-variant mb-1">Nominal (Rp)</label>
+          <div class="space-y-2">
+            {#each transactionAmounts as amount, i}
+              <div class="flex items-center gap-2">
+                <input
+                  required
+                  type="number"
+                  min="1"
+                  step="1"
+                  bind:value={transactionAmounts[i]}
+                  class="w-full rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all px-4 py-3 font-headline-md text-headline-md text-on-surface"
+                />
+                {#if i > 0}
+                  <button
+                    type="button"
+                    class="flex-none p-3 text-on-surface-variant hover:text-error hover:bg-error-container rounded-lg transition-colors flex items-center justify-center"
+                    onclick={() => transactionAmounts = transactionAmounts.filter((_, idx) => idx !== i)}
+                    aria-label="Hapus nominal"
+                  >
+                    <span class="material-symbols-outlined text-[24px]">close</span>
+                  </button>
+                {/if}
+              </div>
+            {/each}
+          </div>
+          <button
+            type="button"
+            class="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:text-primary-container transition-colors py-2"
+            onclick={() => transactionAmounts = [...transactionAmounts, '']}
+          >
+            <span class="material-symbols-outlined text-[18px]">add</span> Tambah nominal
+          </button>
+          
+          {#if transactionAmounts.length > 1}
+            <div class="mt-3 p-3 bg-surface-container rounded-lg flex justify-between items-center">
+              <span class="font-label-md text-label-md text-on-surface-variant">Total Nominal:</span>
+              <span class="font-headline-sm text-headline-sm text-on-surface font-bold">
+                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalTransactionAmount)}
+              </span>
+            </div>
+          {/if}
+        </div>
         <div class="grid gap-3 sm:grid-cols-2">
           <label class="font-label-sm text-label-sm text-on-surface-variant">Tanggal<input required type="date" bind:value={transactionDate} class="mt-1 w-full rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all px-4 py-3" /></label>
           <label class="font-label-sm text-label-sm text-on-surface-variant">Wallet<select required bind:value={transactionWalletId} class="mt-1 w-full rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all px-4 py-3"><option value={0} disabled>Pilih wallet</option>{#each wallets as wallet (wallet.id)}<option value={wallet.id}>{wallet.nama}</option>{/each}</select></label>
