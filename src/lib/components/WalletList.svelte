@@ -124,5 +124,5 @@
   title={confirmTitle}
   message={confirmMessage}
   confirmText={confirmText}
-  onConfirm={confirmAction}
+  onConfirm={confirmAction || undefined}
 />
