@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { transactionStore, walletStore, type UIWallet } from '../stores';
   import { toastStore } from '../stores/toast';
+  import { formatRupiahInput, parseRupiahInput } from '../utils';
 
   export let model: UIWallet | null = null;
   export let editId: number | null = null;
@@ -9,18 +10,18 @@
   export let oncancel: (() => void) | undefined = undefined;
 
   let nama = '';
-  let saldo_awal = 0;
+  let saldo_awal = '';
   let adjustSaldo = false;
-  let newCurrentSaldo = 0;
+  let newCurrentSaldo = '';
   let currentSaldoOriginal = 0;
   let submitting = false;
 
   onMount(() => {
     if (model) {
       nama = model.nama;
-      saldo_awal = model.saldo_awal;
+      saldo_awal = String(model.saldo_awal);
       currentSaldoOriginal = model.saldo;
-      newCurrentSaldo = model.saldo;
+      newCurrentSaldo = String(model.saldo);
     }
   });
 
@@ -29,7 +30,10 @@
       toastStore.error('Nama dompet harus diisi.');
       return;
     }
-    if (!Number.isFinite(saldo_awal) || !Number.isFinite(newCurrentSaldo)) {
+    const parsedSaldoAwal = parseRupiahInput(saldo_awal);
+    const parsedNewCurrentSaldo = parseRupiahInput(newCurrentSaldo);
+
+    if (!Number.isFinite(parsedSaldoAwal) || !Number.isFinite(parsedNewCurrentSaldo)) {
       toastStore.error('Saldo harus berupa angka yang valid.');
       return;
     }
@@ -37,10 +41,10 @@
     submitting = true;
     try {
       if (editId !== null) {
-        await walletStore.updateWallet(editId, { nama: nama.trim(), saldo_awal });
+        await walletStore.updateWallet(editId, { nama: nama.trim(), saldo_awal: parsedSaldoAwal });
 
-        if (adjustSaldo && newCurrentSaldo !== currentSaldoOriginal) {
-          const difference = newCurrentSaldo - currentSaldoOriginal;
+        if (adjustSaldo && parsedNewCurrentSaldo !== currentSaldoOriginal) {
+          const difference = parsedNewCurrentSaldo - currentSaldoOriginal;
           await transactionStore.addTransaction({
             tipe: difference > 0 ? 'income' : 'expense',
             nominal: Math.abs(difference),
@@ -50,7 +54,7 @@
           });
         }
       } else {
-        await walletStore.addWallet(nama.trim(), saldo_awal);
+        await walletStore.addWallet(nama.trim(), parsedSaldoAwal);
       }
       onsaved?.();
       toastStore.success(editId !== null ? 'Dompet diperbarui.' : 'Dompet berhasil ditambahkan.');
@@ -105,13 +109,14 @@
         {#if editId === null || !adjustSaldo}
           <div>
             <label for="wallet-initial-balance" class="block font-label-sm text-label-sm text-on-surface-variant mb-2">Saldo Awal (Rp)</label>
-            <input
-              id="wallet-initial-balance"
-              name="wallet-initial-balance"
-              type="number"
-              bind:value={saldo_awal}
-              step="1000"
-              placeholder="0"
+              <input
+                id="wallet-initial-balance"
+                name="wallet-initial-balance"
+                type="text"
+                inputmode="numeric"
+                value={formatRupiahInput(saldo_awal)}
+                oninput={(e) => { const raw = e.currentTarget.value.replace(/\D/g, ''); saldo_awal = raw; e.currentTarget.value = formatRupiahInput(raw); }}
+                placeholder="0"
               class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-lg outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-surface-container-high text-on-surface font-medium"
             />
           </div>
@@ -137,13 +142,14 @@
           {#if adjustSaldo}
             <div>
               <label for="wallet-current-balance" class="block font-label-sm text-label-sm text-on-surface-variant mb-2">Saldo Baru (Rp)</label>
-              <input
-                id="wallet-current-balance"
-                name="wallet-current-balance"
-                type="number"
-                bind:value={newCurrentSaldo}
-                step="1000"
-                aria-describedby="wallet-recorded-balance"
+                <input
+                  id="wallet-current-balance"
+                  name="wallet-current-balance"
+                  type="text"
+                  inputmode="numeric"
+                  value={formatRupiahInput(newCurrentSaldo)}
+                  oninput={(e) => { const raw = e.currentTarget.value.replace(/\D/g, ''); newCurrentSaldo = raw; e.currentTarget.value = formatRupiahInput(raw); }}
+                  aria-describedby="wallet-recorded-balance"
                 class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-lg outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-surface-container-high text-on-surface font-medium"
               />
               <p id="wallet-recorded-balance" class="font-label-sm text-label-sm text-on-surface-variant mt-2 text-right">

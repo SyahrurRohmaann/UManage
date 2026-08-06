@@ -3,6 +3,7 @@
   import { categoryStore, transactionStore, walletStore } from '../stores';
   import { toastStore } from '../stores/toast';
   import ConfirmationDialog from './ConfirmationDialog.svelte';
+  import { formatRupiahInput, parseRupiahInput } from '../utils';
 
   const transactionState = $derived($transactionStore);
   const walletState = $derived($walletStore);
@@ -32,7 +33,7 @@
   let transactionNote = $state('');
   let transactionTag = $state('');
 
-  let totalTransactionAmount = $derived(transactionAmounts.reduce((sum, val) => sum + (Number(val) || 0), 0));
+  let totalTransactionAmount = $derived(transactionAmounts.reduce((sum, val) => sum + (parseRupiahInput(val) || 0), 0));
 
   let categoryName = $state('');
   let categoryType = $state<'income' | 'expense'>('expense');
@@ -377,10 +378,14 @@
               <div class="flex items-center gap-2">
                 <input
                   required
-                  type="number"
-                  min="1"
-                  step="1"
-                  bind:value={transactionAmounts[i]}
+                  type="text"
+                  inputmode="numeric"
+                  value={formatRupiahInput(transactionAmounts[i])}
+                  oninput={(e) => {
+                    const raw = e.currentTarget.value.replace(/\D/g, '');
+                    transactionAmounts[i] = raw;
+                    e.currentTarget.value = formatRupiahInput(raw);
+                  }}
                   class="w-full rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all px-4 py-3 font-headline-md text-headline-md text-on-surface"
                 />
                 {#if i > 0}
