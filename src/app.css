@@ -1,9 +1,11 @@
+/* @import 'material-icons/iconfont/material-icons.css'; */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 .material-symbols-outlined {
-  font-family: 'Material Symbols Outlined';
+  font-family: 'Material Symbols Outlined', sans-serif;
   font-weight: normal;
   font-style: normal;
   font-size: 24px;  /* Preferred icon size */
@@ -14,6 +16,12 @@
   word-wrap: normal;
   white-space: nowrap;
   direction: ltr;
+  /* Support for all WebKit browsers. */
+  -webkit-font-smoothing: antialiased;
+  /* Support for Safari and Chrome. */
+  text-rendering: optimizeLegibility;
+  /* Support for Firefox. */
+  -moz-osx-font-smoothing: grayscale;
 }
 
 :root {

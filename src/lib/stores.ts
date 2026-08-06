@@ -734,7 +734,7 @@ class PatunganStore extends ReactiveDexieStore<UIPatunganSession[]> {
   }
 
   async deleteSession(id: number, force: boolean = false): Promise<void> {
-    await db.transaction('rw', db.patungan_sessions, db.patungan_items, db.patungan_participants, db.debts, db.debt_payments, db.transactions, async () => {
+    await db.transaction('rw', [db.patungan_sessions, db.patungan_items, db.patungan_participants, db.debts, db.debt_payments, db.transactions], async () => {
       const session = await db.patungan_sessions.get(id);
       if (!session) return;
       const marker = patunganDebtMarker(id);
