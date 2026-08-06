@@ -3,42 +3,42 @@
   import { toastStore } from '../stores/toast';
   import ConfirmationDialog from './ConfirmationDialog.svelte';
 
-  $: debts = $debtStore.data;
-  $: contacts = $contactStore.data;
-  $: wallets = $walletStore.data;
-  $: activeDebt = selectedDebtId === null ? undefined : debts.find((d) => d.id === selectedDebtId);
-  $: selectedPayment = activeDebt?.payments.find((p) => p.id === selectedPaymentId);
-  $: groups = groupedDebts(debts, filterType, filterStatus, sortBy, searchQuery);
+  let filterType = $state<'all' | 'hutang' | 'piutang'>('all');
+  let filterStatus = $state<'all' | 'aktif' | 'lunas' | 'terlambat'>('aktif');
+  let sortBy = $state<'terbaru' | 'terlama' | 'jatuh-tempo' | 'sisa-terbesar'>('terbaru');
+  let searchQuery = $state('');
+  
+  let showAdd = $state(false);
+  let showEditDebt = $state(false);
+  let showPayment = $state(false);
+  let showEditPayment = $state(false);
+  let showContact = $state(false);
+  let selectedDebtId = $state<number | null>(null);
+  let selectedPaymentId = $state<number | null>(null);
+  let contactDetail = $state<UIContactDetail | undefined>();
+  let contactDetailId = $state<number | null>(null);
+  let submitting = $state(false);
+  let detailLoading = $state(false);
 
-  let showAdd = false;
-  let showEditDebt = false;
-  let showPayment = false;
-  let showEditPayment = false;
-  let showContact = false;
-  let selectedDebtId: number | null = null;
-  let selectedPaymentId: number | null = null;
-  let contactDetail: UIContactDetail | undefined;
-  let contactDetailId: number | null = null;
-  let submitting = false;
-  let detailLoading = false;
+  const debts = $derived($debtStore.data);
+  const contacts = $derived($contactStore.data);
+  const wallets = $derived($walletStore.data);
+  const activeDebt = $derived(selectedDebtId === null ? undefined : debts.find((d) => d.id === selectedDebtId));
+  const selectedPayment = $derived(activeDebt?.payments.find((p) => p.id === selectedPaymentId));
+  const groups = $derived(groupedDebts(debts, filterType, filterStatus, sortBy, searchQuery));
 
-  let filterType: 'all' | 'hutang' | 'piutang' = 'all';
-  let filterStatus: 'all' | 'aktif' | 'lunas' | 'terlambat' = 'aktif';
-  let sortBy: 'terbaru' | 'terlama' | 'jatuh-tempo' | 'sisa-terbesar' = 'terbaru';
-  let searchQuery = '';
+  let formType = $state<'hutang' | 'piutang'>('piutang');
+  let formContactId = $state<number | 'new'>('new');
+  let formContactName = $state('');
+  let formAmount = $state('');
+  let formDate = $state(today());
+  let formDue = $state('');
+  let formNote = $state('');
 
-  let formType: 'hutang' | 'piutang' = 'piutang';
-  let formContactId: number | 'new' = 'new';
-  let formContactName = '';
-  let formAmount = '';
-  let formDate = today();
-  let formDue = '';
-  let formNote = '';
-
-  let payAmount = '';
-  let payDate = today();
-  let payWallet: number | '' = '';
-  let payNote = '';
+  let payAmount = $state('');
+  let payDate = $state(today());
+  let payWallet = $state<number | ''>('');
+  let payNote = $state('');
 
   function today(): string { return new Date().toISOString().slice(0, 10); }
   function rupiah(n: number): string { return `Rp ${Math.abs(n).toLocaleString('id-ID')}`; }
@@ -80,14 +80,14 @@
     };
   }
 
-  $: totalHutang = debts.filter((d) => d.status === 'aktif' && d.tipe === 'hutang').reduce((s, d) => s + d.sisa, 0);
-  $: totalPiutang = debts.filter((d) => d.status === 'aktif' && d.tipe === 'piutang').reduce((s, d) => s + d.sisa, 0);
+  const totalHutang = $derived(debts.filter((d) => d.status === 'aktif' && d.tipe === 'hutang').reduce((s, d) => s + d.sisa, 0));
+  const totalPiutang = $derived(debts.filter((d) => d.status === 'aktif' && d.tipe === 'piutang').reduce((s, d) => s + d.sisa, 0));
 
-  let showConfirm = false;
-  let confirmTitle = '';
-  let confirmMessage = '';
-  let confirmText = 'Hapus';
-  let confirmAction: (() => Promise<void>) | undefined = undefined;
+  let showConfirm = $state(false);
+  let confirmTitle = $state('');
+  let confirmMessage = $state('');
+  let confirmText = $state('Hapus');
+  let confirmAction = $state<(() => Promise<void>) | undefined>(undefined);
 
   function groupedDebts(
     source: UIDebt[],
@@ -145,9 +145,37 @@
 </script>
 
 <div class="space-y-6">
-  <div class="flex items-center justify-between"><h2 class="text-xl font-extrabold text-text-primary">Hutang &amp; Piutang</h2><button class="bg-primary from-accent-light to-accent-dark text-white dark:text-primary-bg px-5 py-2.5 rounded-lg font-bold" onclick={openAdd}>Catat</button></div>
-  <div class="grid grid-cols-2 gap-4"><div class="bg-surface-card rounded-xl shadow-card p-4 border-l-[6px] border-success"><span class="text-xs font-bold text-text-secondary">PIUTANG AKTIF</span><p class="text-lg font-extrabold text-success">{rupiah(totalPiutang)}</p></div><div class="bg-surface-card rounded-xl shadow-card p-4 border-l-[6px] border-coral"><span class="text-xs font-bold text-text-secondary">HUTANG AKTIF</span><p class="text-lg font-extrabold text-coral">{rupiah(totalHutang)}</p></div></div>
-  <div class="bg-surface-card rounded-xl p-4 shadow-card space-y-3"><input aria-label="Cari nama atau catatan" bind:value={searchQuery} placeholder="Cari nama atau catatan" class="w-full px-4 py-3 bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors rounded-lg font-bold" /><div class="grid grid-cols-3 gap-2"><select aria-label="Filter tipe" bind:value={filterType} class="px-2 py-2 bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors rounded-lg font-bold"><option value="all">Semua tipe</option><option value="hutang">Hutang</option><option value="piutang">Piutang</option></select><select aria-label="Filter status" bind:value={filterStatus} class="px-2 py-2 bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors rounded-lg font-bold"><option value="all">Semua status</option><option value="aktif">Aktif</option><option value="lunas">Lunas</option><option value="terlambat">Terlambat</option></select><select aria-label="Urutkan" bind:value={sortBy} class="px-2 py-2 bg-surface-base border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors rounded-lg font-bold"><option value="terbaru">Terbaru</option><option value="terlama">Terlama</option><option value="jatuh-tempo">Jatuh tempo</option><option value="sisa-terbesar">Sisa terbesar</option></select></div></div>
+  <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <div>
+      <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">Hutang &amp; Piutang</h2>
+      <p class="font-body-md text-body-md text-on-surface-variant">Kelola apa yang Anda pinjam dan yang dipinjam.</p>
+    </div>
+    <button class="inline-flex items-center gap-2 bg-primary text-on-primary px-5 py-2.5 rounded-lg font-label-md text-label-md hover:bg-surface-tint transition-colors" onclick={openAdd}><span class="material-symbols-outlined text-[18px]">add</span>Catat</button>
+  </div>
+
+  <!-- Summary Bento -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 relative overflow-hidden">
+      <div class="flex items-center gap-stack-sm text-secondary mb-4"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">trending_up</span><span class="font-label-md text-label-md">Total Piutang Aktif</span></div>
+      <div class="font-headline-lg text-headline-lg text-primary tracking-tight">{rupiah(totalPiutang)}</div>
+      <div class="absolute -bottom-8 -right-8 opacity-5"><span class="material-symbols-outlined text-[120px]" style="font-variation-settings: 'FILL' 1;">savings</span></div>
+    </div>
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 relative overflow-hidden">
+      <div class="flex items-center gap-stack-sm text-error mb-4"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">trending_down</span><span class="font-label-md text-label-md">Total Hutang Aktif</span></div>
+      <div class="font-headline-lg text-headline-lg text-primary tracking-tight">{rupiah(totalHutang)}</div>
+      <div class="absolute -bottom-8 -right-8 opacity-5"><span class="material-symbols-outlined text-[120px]" style="font-variation-settings: 'FILL' 1;">account_balance</span></div>
+    </div>
+  </div>
+
+  <!-- Filter / Search -->
+  <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-4 space-y-3">
+    <div class="relative"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span><input aria-label="Cari nama atau catatan" bind:value={searchQuery} placeholder="Cari nama atau catatan" class="w-full pl-10 pr-4 py-2.5 bg-background border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all rounded-lg font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant placeholder:font-normal" /></div>
+    <div class="grid grid-cols-3 gap-2">
+      <select aria-label="Filter tipe" bind:value={filterType} class="px-3 py-2.5 bg-background border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all rounded-lg font-label-md text-label-md text-on-surface"><option value="all">Semua tipe</option><option value="hutang">Hutang</option><option value="piutang">Piutang</option></select>
+      <select aria-label="Filter status" bind:value={filterStatus} class="px-3 py-2.5 bg-background border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all rounded-lg font-label-md text-label-md text-on-surface"><option value="all">Semua status</option><option value="aktif">Aktif</option><option value="lunas">Lunas</option><option value="terlambat">Terlambat</option></select>
+      <select aria-label="Urutkan" bind:value={sortBy} class="px-3 py-2.5 bg-background border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all rounded-lg font-label-md text-label-md text-on-surface"><option value="terbaru">Terbaru</option><option value="terlama">Terlama</option><option value="jatuh-tempo">Jatuh tempo</option><option value="sisa-terbesar">Sisa terbesar</option></select>
+    </div>
+  </div>
 
   {#if groups.length === 0}<div class="bg-surface-card rounded-xl p-10 text-center text-text-secondary">Belum ada catatan hutang/piutang.</div>{:else}{#each groups as group (group.id)}<section class="bg-surface-card rounded-xl shadow-card overflow-hidden"><button class="w-full p-4 flex items-center justify-between text-left" aria-label={`Buka catatan ${group.name}`} onclick={() => openContact(group.id)}><span><strong class="text-lg">{group.name}</strong><small class="block text-text-muted">{group.debts.length} catatan · Detail kontak</small></span><span class="text-right">{#if group.piutang}<b class="block text-success">+{rupiah(group.piutang)}</b>{/if}{#if group.hutang}<b class="block text-coral">-{rupiah(group.hutang)}</b>{/if}</span></button><div class="border-t border-gray-100 p-3 space-y-3">{#each group.debts as d (d.id)}<article class="rounded-lg p-4 border-l-4 {d.tipe === 'piutang' ? 'border-success' : 'border-coral'} bg-surface-card"><div class="flex justify-between gap-3"><div><span class="text-[10px] uppercase font-bold">{d.tipe} · {d.status}</span><p class="font-bold">{d.catatan || 'Tanpa catatan'}</p><p class="text-xs text-text-muted">{date(d.tanggal)} · Jatuh tempo {date(d.jatuh_tempo)}</p></div><div class="text-right"><b class="block">{rupiah(d.sisa)}</b><small class="text-text-muted">dari {rupiah(d.nominal_awal)}</small></div></div>{#if d.payments.length}<div class="mt-3 border-t pt-2"><p class="text-xs font-bold text-text-secondary mb-2">Riwayat pembayaran ({d.payments.length})</p>{#each d.payments as p (p.id)}<div class="flex items-center justify-between gap-2 text-sm py-1"><span>{date(p.tanggal)} · {rupiah(p.nominal)}{p.catatan ? ` · ${p.catatan}` : ''}{p.wallet ? ` · ${p.wallet.nama}` : ''}</span><span class="flex gap-1"><button class="min-h-11 min-w-11 rounded px-2 text-primary-dark underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-dark" aria-label="Edit pembayaran" onclick={() => openEditPayment(d, p)}>Edit</button><button class="min-h-11 min-w-11 rounded px-2 text-coral underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral" aria-label="Hapus pembayaran" onclick={() => removePayment(p)}>Hapus</button></span></div>{/each}</div>{/if}<div class="mt-3 flex flex-wrap gap-2">{#if d.status === 'aktif'}<button class="bg-primary-bg text-primary-dark font-bold px-3 py-1.5 rounded" onclick={() => openAddPayment(d)}>Bayar</button><a class="bg-green-50 dark:bg-primary-bg text-success font-bold px-3 py-1.5 rounded" href={wa(d)} target="_blank" rel="noreferrer">Tagih WA</a>{/if}<button class="bg-gray-100 px-3 py-1.5 rounded font-bold" onclick={() => openEdit(d)}>Edit</button><button class="bg-red-50 dark:bg-primary-bg text-coral px-3 py-1.5 rounded font-bold" onclick={() => removeDebt(d)}>Hapus</button></div></article>{/each}</div></section>{/each}{/if}
 </div>

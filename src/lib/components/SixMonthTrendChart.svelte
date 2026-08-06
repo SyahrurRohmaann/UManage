@@ -21,8 +21,8 @@
           {
             label: 'Pemasukan',
             data: [],
-            borderColor: '#10b981', // emerald-500
-            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            borderColor: '#006c49', // secondary emerald
+            backgroundColor: 'rgba(0, 108, 73, 0.1)',
             borderWidth: 2,
             pointRadius: 0,
             pointHoverRadius: 4,
@@ -32,7 +32,7 @@
           {
             label: 'Pengeluaran',
             data: [],
-            borderColor: '#e11d48', // rose-600
+            borderColor: '#ba1a1a', // error rose
             backgroundColor: 'transparent',
             borderWidth: 2,
             pointRadius: 0,
@@ -54,7 +54,7 @@
             display: false
           },
           tooltip: {
-            backgroundColor: '#0f172a',
+            backgroundColor: '#1e293b',
             padding: 10,
             titleFont: { family: 'Geist', size: 13 },
             bodyFont: { family: 'Geist', size: 13 },

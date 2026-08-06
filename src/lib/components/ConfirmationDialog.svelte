@@ -6,7 +6,7 @@
     confirmText?: string;
     cancelText?: string;
     isDestructive?: boolean;
-    onConfirm?: (() => void) | (() => Promise<void>);
+    onConfirm?: (() => void) | (() => Promise<void>) | undefined;
     onCancel?: () => void;
   }
 
@@ -17,13 +17,17 @@
     confirmText = 'Hapus',
     cancelText = 'Batal',
     isDestructive = false,
-    onConfirm = async () => {},
+    onConfirm = undefined,
     onCancel = () => {}
   }: Props = $props();
 
   let isLoading = $state(false);
 
   async function handleConfirm() {
+    if (!onConfirm) {
+      show = false;
+      return;
+    }
     isLoading = true;
     try {
       await onConfirm();

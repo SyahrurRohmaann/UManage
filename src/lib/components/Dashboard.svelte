@@ -27,15 +27,18 @@
     topCategories: []
   };
 
-  let summary = emptySummary;
-  let currentSection: 'wallets' | 'transactions' = 'wallets';
-  let summaryError: string | null = null;
+  let summary = $state(emptySummary);
+  let currentSection = $state<'wallets' | 'transactions'>('wallets');
+  let summaryError = $state<string | null>(null);
   let summaryRequest = 0;
-  let trendMaximum = 1;
 
-  $: trendMaximum = Math.max(
-    1,
-    ...summary.dailyTrend.flatMap((point) => [point.income, point.expense])
+  let showConfirm = $state(false);
+
+  let trendMaximum = $derived(
+    Math.max(
+      1,
+      ...summary.dailyTrend.flatMap((point) => [point.income, point.expense])
+    )
   );
 
   async function loadSummary(): Promise<void> {
@@ -109,36 +112,52 @@
     return { value: Math.abs(change), isPositive, formatted };
   }
 
-  $: incomeChange = getPercentageChange(summary.income, summary.prevIncome);
-  $: expenseChange = getPercentageChange(summary.expense, summary.prevExpense);
+  let incomeChange = $derived(getPercentageChange(summary.income, summary.prevIncome));
+  let expenseChange = $derived(getPercentageChange(summary.expense, summary.prevExpense));
 </script>
 
 <div class="space-y-6">
-  <section class="grid grid-cols-1 gap-4" aria-labelledby="ringkasan-title">
+  <section aria-labelledby="ringkasan-title">
     <h1 id="ringkasan-title" class="sr-only">Ringkasan keuangan</h1>
-    <div class="bg-surface-card border border-border rounded-xl shadow-sm p-6 relative overflow-hidden">
-      <p class="text-sm font-semibold text-text-secondary tracking-wide uppercase">Total Saldo</p>
-      <h2 class="text-4xl lg:text-5xl font-extrabold mt-3 text-text-primary tracking-tight">{formatRupiah(summary.totalBalance)}</h2>
-      <p class="text-xs font-semibold mt-4 text-text-muted bg-gray-50 inline-block px-3 py-1.5 rounded-md border border-gray-100">
-        {summary.walletCount} dompet aktif
-      </p>
-    </div>
 
-    <div class="grid grid-cols-2 gap-4">
-      <div class="bg-surface-card rounded-lg shadow-card p-4 border-l-[6px] border-success flex flex-col justify-between">
-        <span class="text-sm font-bold text-text-secondary">Pemasukan bulan ini</span>
-        <div class="mt-2 flex items-baseline justify-between flex-wrap gap-2">
-          <p class="text-xl font-extrabold text-text-primary">{formatRupiah(summary.income)}</p>
-          <span class="text-xs font-bold px-2 py-1 rounded-md {incomeChange.isPositive ? 'bg-success-bg text-success' : 'bg-red-50 text-coral'}">
+    <!-- Summary Bento Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+      <!-- Total Balance -->
+      <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 md:col-span-1 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-on-surface-variant font-label-md text-label-md">Total Saldo</span>
+          <span class="material-symbols-outlined text-primary">account_balance</span>
+        </div>
+        <div class="font-display-lg text-display-lg text-primary tracking-tight">{formatRupiah(summary.totalBalance)}</div>
+        <div class="mt-2 text-secondary font-label-sm text-label-sm flex items-center gap-1">
+          <span class="material-symbols-outlined text-[16px]">trending_up</span>
+          <span>{summary.walletCount} Dompet Aktif</span>
+        </div>
+      </div>
+
+      <!-- Monthly Income -->
+      <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-on-surface-variant font-label-md text-label-md">Pemasukan Bulan Ini</span>
+          <span class="material-symbols-outlined text-secondary">arrow_downward</span>
+        </div>
+        <div class="font-headline-lg text-headline-lg text-primary">{formatRupiah(summary.income)}</div>
+        <div class="mt-3">
+          <span class="font-label-sm text-label-sm px-2 py-0.5 rounded-md {incomeChange.isPositive ? 'bg-secondary/10 text-secondary' : 'bg-error/10 text-error'}">
             {incomeChange.formatted}
           </span>
         </div>
       </div>
-      <div class="bg-surface-card rounded-lg shadow-card p-4 border-l-[6px] border-coral flex flex-col justify-between">
-        <span class="text-sm font-bold text-text-secondary">Pengeluaran bulan ini</span>
-        <div class="mt-2 flex items-baseline justify-between flex-wrap gap-2">
-          <p class="text-xl font-extrabold text-text-primary">{formatRupiah(summary.expense)}</p>
-          <span class="text-xs font-bold px-2 py-1 rounded-md {!expenseChange.isPositive ? 'bg-success-bg text-success' : 'bg-red-50 text-coral'}">
+
+      <!-- Monthly Expenses -->
+      <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-on-surface-variant font-label-md text-label-md">Pengeluaran Bulan Ini</span>
+          <span class="material-symbols-outlined text-error">arrow_upward</span>
+        </div>
+        <div class="font-headline-lg text-headline-lg text-primary">{formatRupiah(summary.expense)}</div>
+        <div class="mt-3">
+          <span class="font-label-sm text-label-sm px-2 py-0.5 rounded-md {!expenseChange.isPositive ? 'bg-secondary/10 text-secondary' : 'bg-error/10 text-error'}">
             {expenseChange.formatted}
           </span>
         </div>
@@ -147,62 +166,72 @@
   </section>
 
   {#if summaryError}
-    <p class="rounded-lg bg-red-50 p-3 text-sm font-medium text-coral-dark" role="alert">
+    <p class="rounded-xl bg-error/10 p-3.5 text-xs font-medium text-on-error-container border border-error/20" role="alert">
       Gagal memperbarui ringkasan: {summaryError}
     </p>
   {/if}
 
-  <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-    <section class="bg-surface-card rounded-xl shadow-card p-5" aria-labelledby="trend-title">
-      <div class="flex items-start justify-between gap-3 mb-5">
-        <div>
-          <h2 id="trend-title" class="font-extrabold text-text-primary">Tren 6 bulan terakhir</h2>
-          <p class="text-xs text-text-muted mt-1">Perbandingan pendapatan vs pengeluaran</p>
-        </div>
-        <div class="flex gap-3 text-xs font-bold text-text-secondary" aria-hidden="true">
-          <span><span class="inline-block w-2 h-2 rounded-lg bg-success mr-1"></span>Masuk</span>
-          <span><span class="inline-block w-2 h-2 rounded-lg bg-coral mr-1"></span>Keluar</span>
+  <!-- Main Grid Layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+    <section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm lg:col-span-2" aria-labelledby="trend-title">
+      <div class="flex items-center justify-between mb-6">
+        <h2 id="trend-title" class="font-headline-md text-headline-md text-on-background">Arus Kas</h2>
+        <div class="flex gap-3 font-label-sm text-label-sm text-on-surface-variant" aria-hidden="true">
+          <span class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-secondary"></span>Pemasukan</span>
+          <span class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-error"></span>Pengeluaran</span>
         </div>
       </div>
 
       {#if summary.monthlyTrend.length === 0}
-        <p class="py-10 text-center text-sm text-text-muted">Belum ada data transaksi.</p>
+        <p class="py-10 text-center font-label-sm text-label-sm text-on-surface-variant">Belum ada data transaksi.</p>
       {:else}
-        <SixMonthTrendChart dataPoints={summary.monthlyTrend} />
+        <div class="w-full h-64 bg-surface rounded-lg border border-outline-variant/50 relative p-4 flex items-end">
+          <SixMonthTrendChart dataPoints={summary.monthlyTrend} />
+        </div>
       {/if}
     </section>
 
-    <section class="bg-surface-card rounded-xl shadow-card p-5" aria-labelledby="kategori-title">
-      <h2 id="kategori-title" class="font-extrabold text-text-primary">5 kategori pengeluaran terbesar</h2>
-      <p class="text-xs text-text-muted mt-1 mb-4">Bulan berjalan</p>
+    <section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm flex flex-col" aria-labelledby="kategori-title">
+      <div class="flex items-center justify-between mb-6">
+        <h2 id="kategori-title" class="font-headline-md text-headline-md text-on-background">Top Kategori</h2>
+        <span class="text-on-surface-variant font-label-sm text-label-sm">Bulan Ini</span>
+      </div>
       {#if summary.topCategories.length === 0}
-        <p class="py-10 text-center text-sm text-text-muted">Belum ada pengeluaran berkategori.</p>
+        <p class="py-10 text-center font-label-sm text-label-sm text-on-surface-variant">Belum ada pengeluaran.</p>
       {:else}
-        <ol class="space-y-3">
+        <div class="flex flex-col gap-0">
           {#each summary.topCategories as category, index}
-            <li class="flex items-center gap-3">
-              <span class="w-5 text-xs font-bold text-text-muted">{index + 1}</span>
-              <span class="h-3 w-3 shrink-0 rounded-lg" style={`background-color: ${category.warna}`}></span>
-              <span class="min-w-0 flex-1 truncate text-sm font-bold text-text-secondary">{category.nama}</span>
-              <span class="text-sm font-extrabold text-text-primary">{formatRupiah(category.total)}</span>
-            </li>
+            <div class="flex items-center justify-between py-3 border-b border-surface-variant last:border-0">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={`background-color: ${category.warna}20; color: ${category.warna}`}>
+                  <span class="material-symbols-outlined text-[20px]">category</span>
+                </div>
+                <div>
+                  <div class="font-label-md text-label-md text-on-background truncate max-w-[120px]">{category.nama}</div>
+                  <div class="font-label-sm text-label-sm text-on-surface-variant">Posisi {index + 1}</div>
+                </div>
+              </div>
+              <div class="font-label-md text-label-md text-on-background font-bold">
+                {formatRupiah(category.total)}
+              </div>
+            </div>
           {/each}
-        </ol>
+        </div>
       {/if}
     </section>
   </div>
 
-  <div class="flex border-b-[3px] border-dashed border-gray-200 mt-6 relative" role="tablist" aria-label="Isi dasbor">
+  <div class="flex border-b-[3px] border-dashed border-outline-variant mt-6 relative" role="tablist" aria-label="Isi dasbor">
     <button
       type="button"
       role="tab"
       aria-selected={currentSection === 'wallets'}
       onclick={() => currentSection = 'wallets'}
-      class="{currentSection === 'wallets' ? 'text-primary font-extrabold' : 'text-text-muted font-bold'} pb-3 px-6 transition-colors relative"
+      class="{currentSection === 'wallets' ? 'text-primary font-extrabold' : 'text-on-surface-variant font-bold'} pb-3 px-6 transition-colors relative"
     >
       Dompet Saya
       {#if currentSection === 'wallets'}
-        <span class="absolute bottom-[-3px] left-0 w-full h-[3px] bg-primary rounded-lg shadow-sm"></span>
+        <span class="absolute bottom-[-3px] left-0 w-full h-[3px] bg-primary rounded-lg"></span>
       {/if}
     </button>
     <button
@@ -210,11 +239,11 @@
       role="tab"
       aria-selected={currentSection === 'transactions'}
       onclick={() => currentSection = 'transactions'}
-      class="{currentSection === 'transactions' ? 'text-primary font-extrabold' : 'text-text-muted font-bold'} pb-3 px-6 transition-colors relative"
+      class="{currentSection === 'transactions' ? 'text-primary font-extrabold' : 'text-on-surface-variant font-bold'} pb-3 px-6 transition-colors relative"
     >
       Riwayat
       {#if currentSection === 'transactions'}
-        <span class="absolute bottom-[-3px] left-0 w-full h-[3px] bg-primary rounded-lg shadow-sm"></span>
+        <span class="absolute bottom-[-3px] left-0 w-full h-[3px] bg-primary rounded-lg"></span>
       {/if}
     </button>
   </div>
